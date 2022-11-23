@@ -1,5 +1,9 @@
+import re
+
+import numpy as np
 import pandas as pd
 import torch
+from gensim import downloader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import f1_score
 from torch import nn
@@ -12,7 +16,7 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class NER_DataSet(Dataset):
-    def __init__(self, file_path, tokenizer=None):
+    def __init__(self, file_path, vector_type, tokenizer=None):
         # TODO: remove this section of open file?
         self.file_path = file_path
         data = pd.read_csv(self.file_path)
@@ -23,21 +27,53 @@ class NER_DataSet(Dataset):
             tag: idx for idx, tag in enumerate(sorted(list(set(self.labels))))
         }
         self.idx_to_tag = {idx: tag for tag, idx in self.tags_to_idx.items()}
-        if tokenizer is None:
-            # TODO: change tfidf to other vector representation?
-            self.tokenizer = TfidfVectorizer(lowercase=True, stop_words=None)
-            self.tokenized_sen = self.tokenizer.fit_transform(self.sentences)
+
+        self.vector_type = vector_type
+        if vector_type == "tf-idf":
+            if tokenizer is None:
+                # TODO: change tfidf to other vector representation?
+                self.tokenizer = TfidfVectorizer(lowercase=True, stop_words=None)
+                self.tokenized_sen = self.tokenizer.fit_transform(self.sentences)
+            else:
+                self.tokenizer = tokenizer
+                # TODO: transform word or sentence?
+                self.tokenized_sen = self.tokenizer.transform(self.sentences)
+            # TODO: change?
+            self.vocabulary_size = len(self.tokenizer.vocabulary_)
         else:
-            self.tokenizer = tokenizer
-            # TODO: transform word or sentence?
-            self.tokenized_sen = self.tokenizer.transform(self.sentences)
-        # TODO: change?
-        self.vocabulary_size = len(self.tokenizer.vocabulary_)
+            if vector_type == "w2v":
+                model = downloader.load(WORD_2_VEC_PATH)
+            elif vector_type == "glove":
+                model = downloader.load(GLOVE_PATH)
+            else:
+                raise KeyError(f"{vector_type} is not a supported vector type")
+            representation, labels = [], []
+            for sen, cur_labels in zip(self.sentences, self.labels):
+                cur_rep = []
+                for word in sen.split():
+                    word = re.sub(r"\W+", "", word.lower())
+                    if word not in model.key_to_index:
+                        continue
+                    vec = model[word]
+                    cur_rep.append(vec)
+                if len(cur_rep) == 0:
+                    print(f"Sentence {sen} cannot be represented!")
+                    continue
+                cur_rep = np.stack(cur_rep).mean(axis=0)  # HW TODO: change to token lev
+                representation.append(cur_rep)
+                labels.append(cur_labels)
+            self.labels = labels
+            representation = np.stack(representation)
+            self.tokenized_sen = representation
+            self.vector_dim = representation.shape[-1]
 
     def __getitem__(self, item):
         # NOTE: question - where does the function call to this?
         cur_sen = self.tokenized_sen[item]
-        cur_sen = torch.FloatTensor(cur_sen.toarray()).squeeze()
+        if self.vector_type == "tf-idf":
+            cur_sen = torch.FloatTensor(cur_sen.toarray()).squeeze()
+        else:
+            cur_sen = torch.FloatTensor(cur_sen).squeeze()
         label = self.labels[item]
         label = self.tags_to_idx[label]
         # label = torch.Tensor(label)
