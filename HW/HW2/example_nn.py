@@ -7,6 +7,8 @@ from torch.utils.data import DataLoader, TensorDataset
 # Step 1 - Creating our neural-net model
 
 # We create a FC regression network, with 2 layers.
+
+
 class RegressioNet(nn.Module):
     def __init__(self):
         super(RegressioNet, self).__init__()
@@ -43,7 +45,7 @@ plt.show()
 
 split_frac = 0.8
 
-## split data into training, validation, and test data (x and y)
+# split data into training, validation, and test data (x and y)
 
 split_idx = int(len(x) * split_frac)
 train_x, remaining_x = x[:split_idx], x[split_idx:]
@@ -142,7 +144,8 @@ for e in range(epochs):
         # get the output from the model
         # x.size() -> [batch_size]
         batch_size = inputs.size(0)
-        # IMPORTANT - change the dimensions of x before it enters the NN, batch size must always be first
+        # IMPORTANT - change the dimensions of x before it enters the NN,
+        # batch size must always be first
         x = inputs.unsqueeze(0)  # x.size() -> [1, batch_size]
         x = x.view(batch_size, -1)  # x.size() -> [batch_size, 1]
         predictions = net(x)
@@ -172,7 +175,8 @@ for e in range(epochs):
                 # get the output from the model
                 # x.size() -> [batch_size]
                 batch_size = inputs.size(0)
-                # IMPORTANT - change the dimensions of x before it enters the NN, batch size must always be first
+                # IMPORTANT - change the dimensions of x before it enters the NN,
+                # batch size must always be first
                 x = inputs.unsqueeze(0)  # x.size() -> [1, batch_size]
                 x = x.view(batch_size, -1)  # x.size() -> [batch_size, 1]
                 val_predictions = net(x)
