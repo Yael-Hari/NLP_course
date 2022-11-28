@@ -1,20 +1,16 @@
 import re
 
+import matplotlib as plt
 import numpy as np
 import pandas as pd
 import torch
 from gensim import downloader
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score, f1_score
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
-# -----------------------
-# Define the data set
-# -----------------------
-
-
-
+from preprocessing import NERDataset
 
 # -------------------------------
 # Define the Nueral Network Model
@@ -23,9 +19,9 @@ from torch.utils.data import DataLoader, Dataset
 
 class NER_NN(nn.Module):
     # TODO: change hidden dim?
-    def __init__(self, vocab_size, num_classes, hidden_dim=100):
+    def __init__(self, input_size, num_classes, hidden_dim=100):
         super(NER_NN, self).__init__()
-        self.first_layer = nn.Linear(vocab_size, hidden_dim)
+        self.first_layer = nn.Linear(input_size, hidden_dim)
         # TODO: add layer? (hidden, hidden)
         self.second_layer = nn.Linear(hidden_dim, num_classes)
         # TODO: check also other activations (tanh?)
@@ -47,7 +43,8 @@ class NER_NN(nn.Module):
 # Train loop
 # -----------------------
 
-def train_and_plot(NN_model, data_sets, num_epochs: int, batch_size=32):
+
+def train_and_plot(NN_model, train_loader, num_epochs: int, batch_size: int):
 
     # -------
     # GPU
@@ -61,15 +58,6 @@ def train_and_plot(NN_model, data_sets, num_epochs: int, batch_size=32):
     else:
         print("No GPU available, training on CPU.")
 
-    # ---------
-    # Load data
-    # ---------
-
-    # NOTE: question - what does the dataloader do?
-    data_loaders = {
-        "train": DataLoader(data_sets["train"], batch_size=batch_size, shuffle=True),
-        "test": DataLoader(data_sets["test"], batch_size=batch_size, shuffle=False),
-    }
     NN_model.to(device)
 
     # ----------------------------------
@@ -83,170 +71,108 @@ def train_and_plot(NN_model, data_sets, num_epochs: int, batch_size=32):
 
     loss_func = torch.nn.CrossEntropyLoss()
 
-    # ----------------------
-    # Define training params
-    # ----------------------
-
-    counter = 0
-    print_every = 100
-
-    best_f1 = 0.0
+    # ----------------------------------
+    # Epoch Loop
+    # ----------------------------------
 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}/{num_epochs}")
         print("-" * 10)
 
-        for phase in ["train", "test"]:
-            if phase == "train":
-                model.train()
-            else:
-                model.eval()
+        y_true = []
+        y_pred = []
+        loss_batches_list = []
+        f1_batches_list = []
+        accuracy_batches_list = []
 
-            # TODO: get y_true in numbers
-            y_true = []
-            y_pred = []
+        for batch_num, (inputs, labels) in enumerate(train_loader):
+            # if training on gpu
+            inputs, labels = inputs.to(device), labels.to(device)
+            batch_size = labels.shape[0]
 
-            for batch in data_loaders[phase]:
-                batch_size = 0
-                for k, v in batch.items():
-                    batch[k] = v.to(device)
-                    batch_size = v.shape[0]
+            # optimize
+            optimizer.zero_grad()
 
-                optimizer.zero_grad()
-                if phase == "train":
-                    outputs, loss = NN_model(**batch)
-                    loss.backward()
-                    optimizer.step()
-                else:
-                    with torch.no_grad():
-                        outputs, loss = NN_model(**batch)
-                pred = outputs.argmax(dim=-1).clone().detach().cpu()
+            # output
+            # IMPORTANT - change the dimensions of x before it enters the NN,
+            # batch size must always be first
+            x = inputs.unsqueeze(0)  # x.size() -> [1, batch_size]
+            x = x.view(batch_size, -1)  # x.size() -> [batch_size, 1]
+            outputs = NN_model(x)
 
-                cur_num_correct = f1_score(
-                    batch["labels"].cpu().view(-1), pred.view(-1), normalize=False
+            # calculate the loss and perform backprop
+            loss = loss_func(outputs.squeeze(), labels.float())
+            loss_batches_list.append(loss)
+            loss.backward()
+
+            # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
+            nn.utils.clip_grad_norm_(NN_model.parameters(), clip)
+            optimizer.step()
+
+            # predictions
+            preds = outputs.argmax(dim=-1).clone().detach().cpu()
+            y_true.append(labels.cpu().view(-1))
+            y_pred.append(preds.view(-1))
+
+            if batch_num % 1000 == 0:
+                cur_accuracy = accuracy_score(
+                    labels.cpu().view(-1), preds.view(-1), normalize=False
                 )
+                accuracy_batches_list.append(cur_accuracy)
+                cur_f1 = f1_score(
+                    labels.cpu().view(-1), preds.view(-1), normalize=False
+                )
+                f1_batches_list.append(cur_f1)
 
-                running_loss += loss.item() * batch_size
-                running_acc += cur_num_correct
+                plot_loss(inputs, labels, outputs, loss_batches_list)
 
-            epoch_loss = running_loss / len(data_sets[phase])
-            epoch_acc = running_acc / len(data_sets[phase])
-            # TODO: calc f1
-            # epoch_f1 = ?
-
-            epoch_f1 = round(epoch_f1, 5)
-            print(f"{phase.title()} Loss: {epoch_loss:.4e} Accuracy: {epoch_acc}")
-            if phase == "test" and epoch_f1 > best_f1:
-                best_f1 = epoch_f1
-                with open("NN_model.pkl", "wb") as f:
-                    torch.save(NN_model, f)
-        print()
-
-    print(f"Best Validation F1: {best_f1:4f}")
-    with open("NN_model.pkl", "rb") as f:
-        NN_model = torch.load(f)
-    return NN_model
+        print_epoch_results(num_epochs, epoch, y_true, y_pred, loss_batches_list)
 
 
+def print_epoch_results(num_epochs, epoch, y_true, y_pred, loss_batches_list):
+    loss_batches = np.array(loss_batches_list)
+    y_pred = np.array(y_pred)
+    y_true = np.array(y_true)
 
-for e in range(epochs):
-    # batch loop
-    for inputs, labels in train_loader:
-
-        # if training on gpu
-        inputs, labels = inputs.to(device), labels.to(device)
-
-        # zero accumulated gradients
-        net.zero_grad()
-
-        # get the output from the model
-        # x.size() -> [batch_size]
-        batch_size = inputs.size(0)
-        # IMPORTANT - change the dimensions of x before it enters the NN,
-        # batch size must always be first
-        x = inputs.unsqueeze(0)  # x.size() -> [1, batch_size]
-        x = x.view(batch_size, -1)  # x.size() -> [batch_size, 1]
-        predictions = net(x)
-
-        # calculate the loss and perform backprop
-        loss = loss_func(predictions.squeeze(), labels.float())
-        loss.backward()
-        # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-        nn.utils.clip_grad_norm_(net.parameters(), clip)
-        optimizer.step()
-
-        # loss stats
-        if counter % print_every == 0:
-            # Get validation loss
-            val_losses = []
-            net.eval()
-            print_flag = True
-            for inputs, labels in valid_loader:
-                # Creating new variables for the hidden state, otherwise
-                # we'd backprop through the entire training history
-                if print_flag:
-                    inputs, labels = zip(*sorted(zip(inputs.numpy(), labels.numpy())))
-                    inputs = torch.from_numpy(np.asarray(inputs))
-                    labels = torch.from_numpy(np.asarray(labels))
-                inputs, labels = inputs.to(device), labels.to(device)
-
-                # get the output from the model
-                # x.size() -> [batch_size]
-                batch_size = inputs.size(0)
-                # IMPORTANT - change the dimensions of x before it enters the NN,
-                # batch size must always be first
-                x = inputs.unsqueeze(0)  # x.size() -> [1, batch_size]
-                x = x.view(batch_size, -1)  # x.size() -> [batch_size, 1]
-                val_predictions = net(x)
-                val_loss = loss_func(val_predictions.squeeze(), labels.float())
-
-                val_losses.append(val_loss.item())
-                if print_flag:
-                    print_flag = False
-                    # plot and show learning process
-                    fig = plt.figure()
-                    ax = fig.add_subplot(111)
-                    ax.cla()
-                    ax.scatter(inputs.cpu().data.numpy(), labels.cpu().data.numpy())
-                    ax.plot(
-                        inputs.cpu().data.numpy(),
-                        val_predictions.cpu().data.numpy(),
-                        "r-",
-                        lw=2,
-                    )
-                    ax.text(
-                        0.5,
-                        0,
-                        "Loss=%.4f" % np.mean(val_losses),
-                        fontdict={"size": 10, "color": "red"},
-                    )
-                    plt.pause(0.1)
-                    ax.clear()
-
-            net.train()
-            print(
-                "Epoch: {}/{}...".format(e + 1, epochs),
-                "Step: {}...".format(counter),
-                "Loss: {:.6f}...".format(loss.item()),
-                "Val Loss: {:.6f}".format(np.mean(val_losses)),
-            )
-plt.show()
+    accuracy = accuracy_score(y_true, y_pred, normalize=False)
+    f1 = f1_score(y_true, y_pred, normalize=False)
+    print(
+        "Epoch: {}/{}...".format(epoch + 1, num_epochs),
+        "Avg Loss: {:.6f}...".format(loss_batches.mean()),
+        "Accuracy: {:.3f}".format(accuracy),
+        "F1: {:.3f}".format(f1),
+    )
 
 
-def print_loss_stats():
-    
+def plot_loss(inputs, labels, outputs, losses):
+    # plot to show learning process
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.cla()
+    ax.scatter(inputs.cpu().data.numpy(), labels.cpu().data.numpy())
+    ax.plot(
+        inputs.cpu().data.numpy(),
+        outputs.cpu().data.numpy(),
+        "r-",
+        lw=2,
+    )
+    ax.text(
+        0.5,
+        0,
+        "Loss=%.4f" % np.mean(losses),
+        fontdict={"size": 10, "color": "red"},
+    )
+    plt.pause(0.1)
+    ax.clear()
+    plt.show()
+
 
 # -------------------------
 # Putting it all together
 # -------------------------
-
-train_ds = NER_DataSet("data/train.tagged")
-print("created train dataset")
-dev_ds = NER_DataSet("data/dev.csv", tokenizer=train_ds.tokenizer)
-print("created dev dataset")
-ds_to_check = dev_ds
-
-datasets = {"train": train_ds, "test": ds_to_check}
+embedding_type = "glove"
+NER_dataset = NERDataset(embedding_model_type=embedding_type)
+train_loader, dev_loader, test_loader = NER_dataset.get_preprocessed_data()
 
 # TODO: change params?
 
@@ -259,9 +185,16 @@ num_classes = 2
 
 batch_size = 32
 num_epochs = 15
+hidden_dim = 100
+# TODO: change according to the embedding
+input_size = 125  # single vector size
 
-NN_model = NER_NN(num_classes, vocab_size=train_ds.vocabulary_size)
+
+NN_model = NER_NN(input_size=input_size, num_classes=num_classes, hidden_dim=hidden_dim)
 
 train_and_plot(
-    NN_model=NN_model, data_sets=datasets, num_epochs=num_epochs, batch_size=batch_size
+    NN_model=NN_model,
+    train_loader=train_loader,
+    num_epochs=num_epochs,
+    batch_size=batch_size,
 )
