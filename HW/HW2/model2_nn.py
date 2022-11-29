@@ -195,4 +195,5 @@ train_and_plot(
     train_loader=train_loader,
     num_epochs=num_epochs,
     batch_size=batch_size,
+    val_loader=dev_loader,
 )
