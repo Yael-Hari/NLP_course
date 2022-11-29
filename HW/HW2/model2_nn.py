@@ -169,31 +169,40 @@ def print_epoch_details(num_epochs, epoch, confusion_matrix, loss_batches_list):
 # -------------------------
 # Putting it all together
 # -------------------------
-embedding_type = "glove"
-NER_dataset = NERDataset(embedding_model_type=embedding_type)
-train_loader, dev_loader, test_loader = NER_dataset.get_preprocessed_data()
+def main():
+    embedding_type = "glove"
+    NER_dataset = NERDataset(embedding_model_type=embedding_type)
+    train_loader, dev_loader, test_loader = NER_dataset.get_preprocessed_data()
 
-# TODO: change params?
+    # TODO: change params?
 
-# option 1:
-# is identity - yes / no
-num_classes = 2
-# option 2:
-# different classification for differnet identities
-# num_classes = ?
+    # option 1:
+    # is identity - yes / no
+    num_classes = 2
+    # option 2:
+    # different classification for differnet identities
+    # num_classes = ?
 
-batch_size = 128
-num_epochs = 5
-hidden_dim = 100
-# TODO: change according to the embedding
-input_size = NERDataset.VEC_DIM * (1 + 2 * NERDataset.WINDOW_R)  # single vector size
+    batch_size = 128
+    num_epochs = 5
+    hidden_dim = 100
+    # TODO: change according to the embedding
+    input_size = NERDataset.VEC_DIM * (
+        1 + 2 * NERDataset.WINDOW_R
+    )  # single vector size
 
-NN_model = NER_NN(input_size=input_size, num_classes=num_classes, hidden_dim=hidden_dim)
+    NN_model = NER_NN(
+        input_size=input_size, num_classes=num_classes, hidden_dim=hidden_dim
+    )
 
-train_and_plot(
-    NN_model=NN_model,
-    train_loader=train_loader,
-    num_epochs=num_epochs,
-    batch_size=batch_size,
-    val_loader=dev_loader,
-)
+    train_and_plot(
+        NN_model=NN_model,
+        train_loader=train_loader,
+        num_epochs=num_epochs,
+        batch_size=batch_size,
+        val_loader=dev_loader,
+    )
+
+
+if __name__ == "__main__":
+    main()
