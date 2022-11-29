@@ -81,6 +81,7 @@ def train_and_plot(
             num_classes = NN_model.num_classes
             confusion_matrix = np.zeros([num_classes, num_classes])
             loss_batches_list = []
+            num_of_batches = len(data_loader)
 
             for batch_num, (inputs, labels) in enumerate(data_loader):
                 # if training on gpu
@@ -117,7 +118,9 @@ def train_and_plot(
                     confusion_matrix[y_true[i]][y_pred[i]] += 1
                 # print
                 if batch_num % 1000 == 0:
-                    print_epoch_details(batch_num, loss, confusion_matrix)
+                    print_epoch_details(
+                        num_of_batches, batch_num, loss, confusion_matrix
+                    )
 
             print_epoch_details(num_epochs, epoch, confusion_matrix, loss_batches_list)
 
@@ -137,10 +140,10 @@ def get_f1_accuracy_by_confusion_matrix(confusion_matrix):
     return accuracy, f1
 
 
-def print_batch_details(batch_num, loss, confusion_matrix):
+def print_batch_details(num_of_batches, batch_num, loss, confusion_matrix):
     accuracy, f1 = get_f1_accuracy_by_confusion_matrix(confusion_matrix)
     print(
-        "Batch: {}/{}...".format(batch_num + 1, num_epochs),
+        "Batch: {}/{}...".format(batch_num + 1, num_of_batches),
         "Batch Loss: {:.3f}".format(loss),
         "--- Metrics based on batces 1 ... {}".format(batch_num + 1),
         "Accuracy: {:.3f}".format(accuracy),
