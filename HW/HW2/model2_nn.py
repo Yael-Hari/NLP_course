@@ -76,7 +76,7 @@ def train_and_plot(
         if val_loader:
             data_loaders["validate"] = val_loader
 
-        for loader_type, data_loader in data_loaders.itmes():
+        for loader_type, data_loader in data_loaders.items():
             # prepare for evaluate
             num_classes = NN_model.num_classes
             confusion_matrix = np.zeros([num_classes, num_classes])
