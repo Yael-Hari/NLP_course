@@ -1,5 +1,4 @@
 import numpy as np
-import gensim
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, f1_score
@@ -14,7 +13,6 @@ class Model1:
             self.model = SVC(kernel=kernel)
 
     def fit(self, X, y):
-        self.model = KNN(n_neighbors=5)
         self.model.fit(X, y)
 
     def predict(self, x_test):
