@@ -118,7 +118,7 @@ def train_and_plot(
                     confusion_matrix[y_true[i]][y_pred[i]] += 1
                 # print
                 if batch_num % 1000 == 0:
-                    print_epoch_details(
+                    print_batch_details(
                         num_of_batches, batch_num, loss, confusion_matrix
                     )
 
