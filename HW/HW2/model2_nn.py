@@ -161,11 +161,11 @@ def print_epoch_details(num_epochs, epoch, confusion_matrix, loss_batches_list):
         "Accuracy: {:.3f}".format(accuracy),
         "F1: {:.3f}".format(f1),
     )
-    plt.plot(np.arange(num_of_batches), loss_batches)
-    plt.title(f"Loss of epoch {epoch} by batch num")
-    plt.xlabel("Batch Num")
-    plt.ylabel("Loss")
-    plt.show()
+    # plt.plot(np.arange(num_of_batches), loss_batches)
+    # plt.title(f"Loss of epoch {epoch} by batch num")
+    # plt.xlabel("Batch Num")
+    # plt.ylabel("Loss")
+    # plt.show()
 
 
 # -------------------------
