@@ -10,8 +10,8 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 
 class NERDataset:
-    WINDOW_R = 2
-    VEC_DIM = 25  # TODO change to 200
+    WINDOW_R = 0
+    VEC_DIM = 200 
     GLOVE_PATH = f'glove-twitter-{VEC_DIM}'
     WORD2VEC_PATH = 'word2vec-google-news-300'
 

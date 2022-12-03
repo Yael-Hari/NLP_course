@@ -17,17 +17,19 @@ class NER_NN(nn.Module):
         super(NER_NN, self).__init__()
         self.num_classes = num_classes
         self.first_layer = nn.Linear(input_size, hidden_dim)
-        # TODO: add layer? (hidden, hidden)
-        self.second_layer = nn.Linear(hidden_dim, num_classes)
+        second_hidden_size = int(hidden_dim / 2)
+        self.second_layer = nn.Linear(hidden_dim, second_hidden_size)
+        self.third_layer = nn.Linear(second_hidden_size, num_classes)
         # TODO: check also other activations (tanh?)
         self.activation = nn.ReLU()
         self.loss = nn.CrossEntropyLoss()  # for classification
 
     def forward(self, input_ids, labels=None):
-        # NOTE: question - where do we call this function?
         x = self.first_layer(input_ids)
         x = self.activation(x)
         x = self.second_layer(x)
+        x = self.activation(x)
+        x = self.third_layer(x)
         return x
 
 
@@ -171,7 +173,7 @@ def print_epoch_details(num_epochs, epoch, confusion_matrix, loss_batches_list):
 # -------------------------
 def main():
     embedding_type = "glove"
-    batch_size = 128
+    batch_size = 32
     NER_dataset = NERDataset(embedding_model_type=embedding_type, batch_size=batch_size)
     train_loader, dev_loader, test_loader = NER_dataset.get_preprocessed_data()
 
@@ -185,7 +187,7 @@ def main():
     # num_classes = ?
 
     num_epochs = 5
-    hidden_dim = 32
+    hidden_dim = 64
     # TODO: change according to the embedding
     # single vector size
     input_size = NERDataset.VEC_DIM * (1 + 2 * NERDataset.WINDOW_R)
