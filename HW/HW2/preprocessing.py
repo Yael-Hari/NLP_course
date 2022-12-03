@@ -97,7 +97,8 @@ class NERDataset:
                     elif c_word == "~":
                         c_vec = self.tilda_vec
                     elif c_word not in self.embedding_model.key_to_index:
-                        c_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
+                        # c_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
+                        c_vec = torch.zeros(NERDataset.VEC_DIM)
                     else:
                         c_vec = torch.tensor(self.embedding_model[c_word])
                     vecs_list.append(c_vec)
