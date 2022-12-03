@@ -2,6 +2,7 @@ import matplotlib as plt
 import numpy as np
 import torch
 from torch import nn
+from tqdm import tqdm
 
 from preprocessing import NERDataset
 
@@ -58,9 +59,9 @@ def train_and_plot(
     # ----------------------------------
     # many are available such as SGD, Adam, RMSprop, Adagrad..
     # TODO: change optimizer?
-    optimizer = torch.optim.SGD(params=NN_model.parameters(), lr=0.2)
-    clip = 1000  # gradient clipping
-    # optimizer = torch.optim.Adam(params=NN_model.parameters())
+    # optimizer = torch.optim.SGD(params=NN_model.parameters(), lr=0.2)
+    # clip = 1000  # gradient clipping
+    optimizer = torch.optim.Adam(params=NN_model.parameters())
 
     loss_func = torch.nn.CrossEntropyLoss()
 
@@ -80,7 +81,7 @@ def train_and_plot(
             loss_batches_list = []
             num_of_batches = len(data_loader)
 
-            for batch_num, (inputs, labels) in enumerate(data_loader):
+            for batch_num, (inputs, labels) in enumerate(tqdm(data_loader)):
                 # if training on gpu
                 inputs, labels = inputs.to(device), labels.to(device)
                 batch_size = labels.shape[0]
@@ -97,13 +98,13 @@ def train_and_plot(
 
                 # loss
                 loss = loss_func(outputs.squeeze(), labels.long())
-                loss_batches_list.append(loss)
+                loss_batches_list.append(loss.detach())
 
                 if loader_type == "train":
                     # backprop
                     loss.backward()
                     # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-                    nn.utils.clip_grad_norm_(NN_model.parameters(), clip)
+                    # nn.utils.clip_grad_norm_(NN_model.parameters(), clip)
                     optimizer.step()
 
                 # predictions
@@ -114,7 +115,7 @@ def train_and_plot(
                 for i in range(n_preds):
                     confusion_matrix[y_true[i]][y_pred[i]] += 1
                 # print
-                if batch_num % 1000 == 0:
+                if batch_num % 50 == 0:
                     print_batch_details(
                         num_of_batches, batch_num, loss, confusion_matrix
                     )
@@ -183,14 +184,15 @@ def main():
     # different classification for differnet identities
     # num_classes = ?
 
-
     num_epochs = 5
-    hidden_dim = 100
+    hidden_dim = 32
     # TODO: change according to the embedding
     # single vector size
     input_size = NERDataset.VEC_DIM * (1 + 2 * NERDataset.WINDOW_R)
 
-    NN_model = NER_NN(input_size=input_size, num_classes=num_classes, hidden_dim=hidden_dim)
+    NN_model = NER_NN(
+        input_size=input_size, num_classes=num_classes, hidden_dim=hidden_dim
+    )
 
     train_and_plot(
         NN_model=NN_model,
