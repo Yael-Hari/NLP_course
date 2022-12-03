@@ -1,10 +1,12 @@
-import numpy as np
-from gensim import downloader
-import pandas as pd
-from sklearn import preprocessing
 import csv
+
+import numpy as np
+import pandas as pd
 import torch
+from gensim import downloader
+from sklearn import preprocessing
 from torch.utils.data import DataLoader, Dataset, TensorDataset
+
 # from sklearn.feature_extraction.text import TfidfVectorizer
 # import re
 
@@ -12,8 +14,8 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 class NERDataset:
     WINDOW_R = 0
     VEC_DIM = 200  # TODO change to 200
-    GLOVE_PATH = f'glove-twitter-{VEC_DIM}'
-    WORD2VEC_PATH = 'word2vec-google-news-300'
+    GLOVE_PATH = f"glove-twitter-{VEC_DIM}"
+    WORD2VEC_PATH = "word2vec-google-news-300"
 
     def __init__(self, embedding_model_type="glove", batch_size=100):
         self.embedding_model_type = embedding_model_type
@@ -44,22 +46,22 @@ class NERDataset:
 
     def _get_dataset(self, path: str, tagged: bool):
         W = NERDataset.WINDOW_R
-        EOF = '\ufeff'
-        empty_lines = ['', '\t']
+        EOF = "\ufeff"
+        empty_lines = ["", "\t"]
 
         # load data
-        with open(path, 'r', encoding="utf8") as f:
+        with open(path, "r", encoding="utf8") as f:
             raw_lines = f.read()
 
         # split to sentences
         sentences = []
         curr_s = []
-        for word_tag in raw_lines.split('\n'):
+        for word_tag in raw_lines.split("\n"):
             if word_tag not in empty_lines:
-                if EOF == word_tag:   # EOF
+                if EOF == word_tag:  # EOF
                     continue
                 if tagged:
-                    word_tag = tuple(word_tag.split('\t'))
+                    word_tag = tuple(word_tag.split("\t"))
                 curr_s.append(word_tag)
             else:
                 sentences.append(curr_s)
@@ -84,17 +86,20 @@ class NERDataset:
                     s_word, s_tag = s_word
                     y.append(s_tag)
                 vecs_list = []
-                for c_word in sentence[(i_s - W): (i_s + W + 1)]:
+                for c_word in sentence[(i_s - W) : (i_s + W + 1)]:
                     if tagged:
                         c_word, _ = c_word
-                    if (c_word == "*"):
+
+                    c_word = c_word.lower()
+
+                    if c_word == "*":
                         u_c = self.star_vec
-                    elif (c_word == "~"):
+                    elif c_word == "~":
                         u_c = self.tilda_vec
-                    elif (c_word not in self.embedding_model.key_to_index):
+                    elif c_word not in self.embedding_model.key_to_index:
                         u_c = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
                     else:
-                        u_c = torch.tensor(self.embedding_model[c_word.lower()])
+                        u_c = torch.tensor(self.embedding_model[c_word])
                     vecs_list.append(u_c)
                 concated_vec = torch.cat(vecs_list)
                 X.append(concated_vec)
@@ -110,8 +115,8 @@ class NERDataset:
         X_test = self._get_dataset(path=self.test_path, tagged=False)
 
         # make labels binary
-        y_train = torch.Tensor([0 if y == 'O' else 1 for y in y_train])
-        y_dev = torch.Tensor([0 if y == 'O' else 1 for y in y_dev])
+        y_train = torch.Tensor([0 if y == "O" else 1 for y in y_train])
+        y_dev = torch.Tensor([0 if y == "O" else 1 for y in y_dev])
 
         # encode labels: for multy class
         # self.label_encoder.fit(y_train)
@@ -127,17 +132,21 @@ class NERDataset:
         test_dataset = TensorDataset(X_test)
 
         # create dataloader
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        train_loader = DataLoader(
+            train_dataset, batch_size=self.batch_size, shuffle=True
+        )
         dev_loader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True)
-        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
+        test_loader = DataLoader(
+            test_dataset, batch_size=self.batch_size, shuffle=False
+        )
 
         return train_loader, dev_loader, test_loader
 
 
 class EmbeddingDataset:
     def __init__(self):
-        self.embedding_model_type = 'glove'
-        self.embedding_model_path = f'glove-twitter-200'
+        self.embedding_model_type = "glove"
+        self.embedding_model_path = f"glove-twitter-200"
         print("prepering glove...")
         self.embedding_model = downloader.load(self.embedding_model_path)
         self.count_glove = 0
@@ -147,25 +156,25 @@ class EmbeddingDataset:
         X_train, y_train = self._get_dataset("data/train.tagged", tagged=True)
         X_dev, y_dev = self._get_dataset("data/dev.tagged", tagged=True)
         # make labels binary
-        y_train = torch.Tensor([0 if y == 'O' else 1 for y in y_train])
-        y_dev = torch.Tensor([0 if y == 'O' else 1 for y in y_dev])
+        y_train = torch.Tensor([0 if y == "O" else 1 for y in y_train])
+        y_dev = torch.Tensor([0 if y == "O" else 1 for y in y_dev])
         return X_train, y_train, X_dev, y_dev
 
     def _get_dataset(self, path: str, tagged: bool):
         W = NERDataset.WINDOW_R
-        EOF = '\ufeff'
-        empty_lines = ['', '\t', EOF]
+        EOF = "\ufeff"
+        empty_lines = ["", "\t", EOF]
 
         # load data
-        with open(path, 'r', encoding="utf8") as f:
+        with open(path, "r", encoding="utf8") as f:
             raw_lines = f.read()
 
         # split to sentences
         words = []
-        for word_tag in raw_lines.split('\n'):
+        for word_tag in raw_lines.split("\n"):
             if word_tag not in empty_lines:
                 if tagged:
-                    word_tag = tuple(word_tag.split('\t'))
+                    word_tag = tuple(word_tag.split("\t"))
                 words.append(word_tag)
 
         X = []
