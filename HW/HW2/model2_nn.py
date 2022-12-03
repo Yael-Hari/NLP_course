@@ -27,10 +27,7 @@ class NER_NN(nn.Module):
         x = self.first_layer(input_ids)
         x = self.activation(x)
         x = self.second_layer(x)
-        if labels is None:
-            return x, None
-        loss = self.loss(x, labels)
-        return x, loss
+        return x
 
 
 # -------------------------
@@ -99,7 +96,7 @@ def train_and_plot(
                 outputs = NN_model(x)
 
                 # loss
-                loss = loss_func(outputs.squeeze(), labels.float())
+                loss = loss_func(outputs.squeeze(), labels.long())
                 loss_batches_list.append(loss)
 
                 if loader_type == "train":
@@ -111,7 +108,7 @@ def train_and_plot(
 
                 # predictions
                 preds = outputs.argmax(dim=-1).clone().detach().cpu()
-                y_true = np.array(labels.cpu().view(-1))
+                y_true = np.array(labels.cpu().view(-1).int())
                 y_pred = np.array(preds.view(-1))
                 n_preds = len(y_pred)
                 for i in range(n_preds):
@@ -143,10 +140,9 @@ def get_f1_accuracy_by_confusion_matrix(confusion_matrix):
 def print_batch_details(num_of_batches, batch_num, loss, confusion_matrix):
     accuracy, f1 = get_f1_accuracy_by_confusion_matrix(confusion_matrix)
     print(
-        "Batch: {}/{}...".format(batch_num + 1, num_of_batches),
-        "Batch Loss: {:.3f}".format(loss),
-        "--- Metrics based on batces 1 ... {}".format(batch_num + 1),
-        "Accuracy: {:.3f}".format(accuracy),
+        "Batch: {}/{} |".format(batch_num + 1, num_of_batches),
+        "Batch Loss: {:.3f} |".format(loss),
+        "Accuracy: {:.3f} |".format(accuracy),
         "F1: {:.3f}".format(f1),
     )
 
@@ -174,7 +170,8 @@ def print_epoch_details(num_epochs, epoch, confusion_matrix, loss_batches_list):
 # -------------------------
 def main():
     embedding_type = "glove"
-    NER_dataset = NERDataset(embedding_model_type=embedding_type)
+    batch_size = 128
+    NER_dataset = NERDataset(embedding_model_type=embedding_type, batch_size=batch_size)
     train_loader, dev_loader, test_loader = NER_dataset.get_preprocessed_data()
 
     # TODO: change params?
@@ -186,17 +183,14 @@ def main():
     # different classification for differnet identities
     # num_classes = ?
 
-    batch_size = 128
+
     num_epochs = 5
     hidden_dim = 100
     # TODO: change according to the embedding
-    input_size = NERDataset.VEC_DIM * (
-        1 + 2 * NERDataset.WINDOW_R
-    )  # single vector size
+    # single vector size
+    input_size = NERDataset.VEC_DIM * (1 + 2 * NERDataset.WINDOW_R)
 
-    NN_model = NER_NN(
-        input_size=input_size, num_classes=num_classes, hidden_dim=hidden_dim
-    )
+    NN_model = NER_NN(input_size=input_size, num_classes=num_classes, hidden_dim=hidden_dim)
 
     train_and_plot(
         NN_model=NN_model,
