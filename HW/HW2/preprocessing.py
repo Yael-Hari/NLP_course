@@ -93,14 +93,14 @@ class NERDataset:
                     c_word = c_word.lower()
 
                     if c_word == "*":
-                        u_c = self.star_vec
+                        c_vec = self.star_vec
                     elif c_word == "~":
-                        u_c = self.tilda_vec
+                        c_vec = self.tilda_vec
                     elif c_word not in self.embedding_model.key_to_index:
-                        u_c = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
+                        c_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
                     else:
-                        u_c = torch.tensor(self.embedding_model[c_word])
-                    vecs_list.append(u_c)
+                        c_vec = torch.tensor(self.embedding_model[c_word])
+                    vecs_list.append(c_vec)
                 concated_vec = torch.cat(vecs_list)
                 X.append(concated_vec)
         if tagged:
