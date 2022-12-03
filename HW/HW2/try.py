@@ -15,7 +15,7 @@ WORD_2_VEC_PATH = "word2vec-google-news-300"
 class SimpleDataSet(Dataset):
     def __init__(self, file_path, vector_type, tokenizer=None):
         self.file_path = file_path
-        data = pd.read_csv(self.file_path)
+        data = pd.read_csv(self.file_path, sep='\t', header=['word', 'label'])
         data["label"] = data["label"].replace({"Positive": 1, "Negative": 0})
         self.sentences = data["reviewText"].tolist()
         self.labels = data["label"].tolist()
@@ -78,9 +78,9 @@ class SimpleDataSet(Dataset):
 
 def main():
     batch_size = 64
-    train_ds = SimpleDataSet("amazon_sa/train.csv", vector_type="glove")
+    train_ds = SimpleDataSet("data/train.tagged", vector_type="glove")
     print("created train")
-    test_ds = SimpleDataSet("amazon_sa/test.csv", vector_type="glove")
+    test_ds = SimpleDataSet("data/dev.tagged", vector_type="glove")
     data_sets = {"train": train_ds, "test": test_ds}
     data_loaders = {
         "train": DataLoader(data_sets["train"], batch_size=batch_size, shuffle=True),
