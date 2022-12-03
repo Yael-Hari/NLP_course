@@ -173,7 +173,7 @@ def print_epoch_details(num_epochs, epoch, confusion_matrix, loss_batches_list):
 # -------------------------
 def main():
     embedding_type = "glove"
-    batch_size = 32
+    batch_size = 64
     NER_dataset = NERDataset(embedding_model_type=embedding_type, batch_size=batch_size)
     train_loader, dev_loader, test_loader = NER_dataset.get_preprocessed_data()
 
