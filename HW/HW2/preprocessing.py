@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 class NERDataset:
     WINDOW_R = 0
-    VEC_DIM = 200 
+    VEC_DIM = 200  # TODO change to 200
     GLOVE_PATH = f'glove-twitter-{VEC_DIM}'
     WORD2VEC_PATH = 'word2vec-google-news-300'
 
@@ -26,25 +26,25 @@ class NERDataset:
             raise Exception("invalid model name")
 
         self.embedding_model = self._load_embedding_model()
+        # self.label_encoder = preprocessing.LabelEncoder()
 
-        self.label_encoder = preprocessing.LabelEncoder()
-
+        # paths to data
         self.train_path = "data/train.tagged"
         self.dev_path = "data/dev.tagged"
         self.test_path = "data/test.untagged"
 
-        #
+        # initialize
         self.star_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
         self.tilda_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
 
     def _load_embedding_model(self):
-        # return 1
         print(f"preparing {self.embedding_model_type}...")
         glove = downloader.load(self.embedding_model_path)
         return glove
 
     def _get_dataset(self, path: str, tagged: bool):
         W = NERDataset.WINDOW_R
+        EOF = '\ufeff'
         empty_lines = ['', '\t']
 
         # load data
@@ -56,7 +56,7 @@ class NERDataset:
         curr_s = []
         for word_tag in raw_lines.split('\n'):
             if word_tag not in empty_lines:
-                if '\ufeff' == word_tag:
+                if EOF == word_tag:   # EOF
                     continue
                 if tagged:
                     word_tag = tuple(word_tag.split('\t'))
@@ -134,74 +134,53 @@ class NERDataset:
         return train_loader, dev_loader, test_loader
 
 
-# class NER_DataSet(Dataset):
-#     VEC_DIM = 25  # TODO change to 200
-#     GLOVE_PATH = f"glove-twitter-{VEC_DIM}"
-#     WORD_2_VEC_PATH = "word2vec-google-news-300"
-#
-#     def __init__(self, file_path, vector_type, tokenizer=None):
-#         # TODO: remove this section of open file?
-#         self.file_path = file_path
-#         data = pd.read_csv(self.file_path)
-#         self.sentences = data["reviewText"].tolist()
-#         self.labels = data["label"].tolist()
-#
-#         self.tags_to_idx = {
-#             tag: idx for idx, tag in enumerate(sorted(list(set(self.labels))))
-#         }
-#         self.idx_to_tag = {idx: tag for tag, idx in self.tags_to_idx.items()}
-#
-#         self.vector_type = vector_type
-#         if vector_type == "tf-idf":
-#             if tokenizer is None:
-#                 # TODO: change tfidf to other vector representation?
-#                 self.tokenizer = TfidfVectorizer(lowercase=True, stop_words=None)
-#                 self.tokenized_sen = self.tokenizer.fit_transform(self.sentences)
-#             else:
-#                 self.tokenizer = tokenizer
-#                 # TODO: transform word or sentence?
-#                 self.tokenized_sen = self.tokenizer.transform(self.sentences)
-#             # TODO: change?
-#             self.vocabulary_size = len(self.tokenizer.vocabulary_)
-#         else:
-#             if vector_type == "w2v":
-#                 model = downloader.load(self.WORD_2_VEC_PATH)
-#             elif vector_type == "glove":
-#                 model = downloader.load(self.GLOVE_PATH)
-#             else:
-#                 raise KeyError(f"{vector_type} is not a supported vector type")
-#             representation, labels = [], []
-#             for sen, cur_labels in zip(self.sentences, self.labels):
-#                 cur_rep = []
-#                 for word in sen.split():
-#                     word = re.sub(r"\W+", "", word.lower())
-#                     if word not in model.key_to_index:
-#                         continue
-#                     vec = model[word]
-#                     cur_rep.append(vec)
-#                 if len(cur_rep) == 0:
-#                     print(f"Sentence {sen} cannot be represented!")
-#                     continue
-#                 cur_rep = np.stack(cur_rep).mean(axis=0)  # HW TODO: change to token lev
-#                 representation.append(cur_rep)
-#                 labels.append(cur_labels)
-#             self.labels = labels
-#             representation = np.stack(representation)
-#             self.tokenized_sen = representation
-#             self.vector_dim = representation.shape[-1]
-#
-#     def __getitem__(self, item):
-#         # NOTE: question - where does the function call to this?
-#         cur_sen = self.tokenized_sen[item]
-#         if self.vector_type == "tf-idf":
-#             cur_sen = torch.FloatTensor(cur_sen.toarray()).squeeze()
-#         else:
-#             cur_sen = torch.FloatTensor(cur_sen).squeeze()
-#         label = self.labels[item]
-#         label = self.tags_to_idx[label]
-#         # label = torch.Tensor(label)
-#         data = {"input_ids": cur_sen, "labels": label}
-#         return data
-#
-#     def __len__(self):
-#         return len(self.sentences)
+class EmbeddingDataset:
+    def __init__(self):
+        self.embedding_model_type = 'glove'
+        self.embedding_model_path = f'glove-twitter-200'
+        print("prepering glove...")
+        self.embedding_model = downloader.load(self.embedding_model_path)
+        self.count_glove = 0
+        self.count_not_glove = 0
+
+    def get_preprocessed_data(self):
+        X_train, y_train = self._get_dataset("data/train.tagged", tagged=True)
+        X_dev, y_dev = self._get_dataset("data/dev.tagged", tagged=True)
+        # make labels binary
+        y_train = torch.Tensor([0 if y == 'O' else 1 for y in y_train])
+        y_dev = torch.Tensor([0 if y == 'O' else 1 for y in y_dev])
+        return X_train, y_train, X_dev, y_dev
+
+    def _get_dataset(self, path: str, tagged: bool):
+        W = NERDataset.WINDOW_R
+        EOF = '\ufeff'
+        empty_lines = ['', '\t', EOF]
+
+        # load data
+        with open(path, 'r', encoding="utf8") as f:
+            raw_lines = f.read()
+
+        # split to sentences
+        words = []
+        for word_tag in raw_lines.split('\n'):
+            if word_tag not in empty_lines:
+                if tagged:
+                    word_tag = tuple(word_tag.split('\t'))
+                words.append(word_tag)
+
+        X = []
+        y = []
+        for word in words:
+            if tagged:
+                word, tag = word
+                y.append(tag)
+            word = word.lower()
+            if word not in self.embedding_model.key_to_index:
+                u_c = torch.zeros(NERDataset.VEC_DIM)
+                self.count_not_glove += 1
+            else:
+                u_c = torch.tensor(self.embedding_model[word])
+                self.count_glove += 1
+            X.append(u_c)
+
+        return X, y
