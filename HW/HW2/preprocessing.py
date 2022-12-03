@@ -94,7 +94,7 @@ class NERDataset:
                     elif (c_word not in self.embedding_model.key_to_index):
                         u_c = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
                     else:
-                        u_c = torch.tensor(self.embedding_model[c_word])
+                        u_c = torch.tensor(self.embedding_model[c_word.lower()])
                     vecs_list.append(u_c)
                 concated_vec = torch.cat(vecs_list)
                 X.append(concated_vec)
