@@ -1,4 +1,4 @@
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from torch import nn
@@ -100,7 +100,7 @@ def train_and_plot(
 
                 # loss
                 loss = loss_func(outputs.squeeze(), labels.long())
-                loss_batches_list.append(loss.detach())
+                loss_batches_list.append(loss.detach().cpu())
 
                 if loader_type == "train":
                     # backprop
