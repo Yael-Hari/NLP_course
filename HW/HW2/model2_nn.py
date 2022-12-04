@@ -124,6 +124,7 @@ def train_and_plot(
                         loss,
                         train_confusion_matrix,
                         val_confusion_matrix,
+                        loader_type,
                     )
 
             print_epoch_details(
@@ -132,6 +133,7 @@ def train_and_plot(
                 train_confusion_matrix,
                 train_loss_batches_list,
                 val_confusion_matrix,
+                loader_type,
             )
     torch.save(NN_model.state_dict(), NN_model.model_save_path)
 
@@ -151,18 +153,24 @@ def get_f1_accuracy_by_confusion_matrix(confusion_matrix):
 
 
 def print_batch_details(
-    num_of_batches, batch_num, loss, train_confusion_matrix, val_confusion_matrix
+    num_of_batches,
+    batch_num,
+    loss,
+    train_confusion_matrix,
+    val_confusion_matrix,
+    loader_type,
 ):
     train_accuracy, train_f1 = get_f1_accuracy_by_confusion_matrix(
         train_confusion_matrix
     )
-    print(
-        "Batch: {}/{} |".format(batch_num + 1, num_of_batches),
-        "Batch Loss: {:.3f} |".format(loss),
-        "Train Accuracy: {:.3f} |".format(train_accuracy),
-        "Train F1: {:.3f}".format(train_f1),
-    )
-    if val_confusion_matrix:
+    if loader_type == "train":
+        print(
+            "Batch: {}/{} |".format(batch_num + 1, num_of_batches),
+            "Batch Loss: {:.3f} |".format(loss),
+            "Train Accuracy: {:.3f} |".format(train_accuracy),
+            "Train F1: {:.3f}".format(train_f1),
+        )
+    if loader_type == "validate":
         val_accuracy, val_f1 = get_f1_accuracy_by_confusion_matrix(val_confusion_matrix)
         print(
             "Val Accuracy: {:.3f} |".format(val_accuracy),
@@ -171,20 +179,26 @@ def print_batch_details(
 
 
 def print_epoch_details(
-    num_epochs, epoch, train_confusion_matrix, loss_batches_list, val_confusion_matrix
+    num_epochs,
+    epoch,
+    train_confusion_matrix,
+    loss_batches_list,
+    val_confusion_matrix,
+    loader_type,
 ):
     loss_batches = np.array(loss_batches_list)
     num_of_batches = len(loss_batches)
     train_accuracy, train_f1 = get_f1_accuracy_by_confusion_matrix(
         train_confusion_matrix
     )
-    print(
-        "Epoch: {}/{} |".format(epoch + 1, num_epochs),
-        "Train Avg Loss: {:.3f} |".format(loss_batches.mean()),
-        "Train Accuracy: {:.3f} |".format(train_accuracy),
-        "Train F1: {:.3f}".format(train_f1),
-    )
-    if val_confusion_matrix:
+    if loader_type == "train":
+        print(
+            "Epoch: {}/{} |".format(epoch + 1, num_epochs),
+            "Train Avg Loss: {:.3f} |".format(loss_batches.mean()),
+            "Train Accuracy: {:.3f} |".format(train_accuracy),
+            "Train F1: {:.3f}".format(train_f1),
+        )
+    if loader_type == "validate":
         val_accuracy, val_f1 = get_f1_accuracy_by_confusion_matrix(val_confusion_matrix)
         print(
             "Val Accuracy: {:.3f} |".format(val_accuracy),
@@ -219,7 +233,7 @@ def main():
     # single vector size
     input_size = NERDataset.VEC_DIM * (1 + 2 * NERDataset.WINDOW_R)
 
-    model_save_path = f"model_batchSize_{batch_size}_hidden_{hidden_dim}.pkl"
+    model_save_path = f"model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}.pt"
     NN_model = NER_NN(
         input_size=input_size,
         num_classes=num_classes,
