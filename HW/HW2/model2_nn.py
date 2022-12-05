@@ -12,17 +12,16 @@ from preprocessing import NERDataset
 
 
 class NER_NN(nn.Module):
-    # TODO: change hidden dim?
-    def __init__(self, input_size, num_classes, hidden_dim=100):
+    def __init__(self, input_size, num_classes, hidden_dim, model_save_path):
         super(NER_NN, self).__init__()
         self.num_classes = num_classes
         self.first_layer = nn.Linear(input_size, hidden_dim)
         second_hidden_size = int(hidden_dim / 2)
         self.second_layer = nn.Linear(hidden_dim, second_hidden_size)
         self.third_layer = nn.Linear(second_hidden_size, num_classes)
-        # TODO: check also other activations (tanh?)
         self.activation = nn.ReLU()
         self.loss = nn.CrossEntropyLoss()  # for classification
+        self.model_save_path = model_save_path
 
     def forward(self, input_ids, labels=None):
         x = self.first_layer(input_ids)
@@ -31,11 +30,6 @@ class NER_NN(nn.Module):
         x = self.activation(x)
         x = self.third_layer(x)
         return x
-
-
-# -------------------------
-# Train loop
-# -----------------------
 
 
 def train_and_plot(
@@ -60,7 +54,6 @@ def train_and_plot(
     # Define Optimizer and Loss Function
     # ----------------------------------
     # many are available such as SGD, Adam, RMSprop, Adagrad..
-    # TODO: change optimizer?
     # optimizer = torch.optim.SGD(params=NN_model.parameters(), lr=0.2)
     # clip = 1000  # gradient clipping
     optimizer = torch.optim.Adam(params=NN_model.parameters())
@@ -76,11 +69,15 @@ def train_and_plot(
         if val_loader:
             data_loaders["validate"] = val_loader
 
+        # prepare for evaluate
+        num_classes = NN_model.num_classes
+        train_confusion_matrix = np.zeros([num_classes, num_classes])
+        val_confusion_matrix = None
+        if val_loader:
+            val_confusion_matrix = np.zeros([num_classes, num_classes])
+        train_loss_batches_list = []
+
         for loader_type, data_loader in data_loaders.items():
-            # prepare for evaluate
-            num_classes = NN_model.num_classes
-            confusion_matrix = np.zeros([num_classes, num_classes])
-            loss_batches_list = []
             num_of_batches = len(data_loader)
 
             for batch_num, (inputs, labels) in enumerate(tqdm(data_loader)):
@@ -100,9 +97,9 @@ def train_and_plot(
 
                 # loss
                 loss = loss_func(outputs.squeeze(), labels.long())
-                loss_batches_list.append(loss.detach().cpu())
 
                 if loader_type == "train":
+                    train_loss_batches_list.append(loss.detach().cpu())
                     # backprop
                     loss.backward(retain_graph=True)
                     # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
@@ -115,19 +112,34 @@ def train_and_plot(
                 y_pred = np.array(preds.view(-1))
                 n_preds = len(y_pred)
                 for i in range(n_preds):
-                    confusion_matrix[y_true[i]][y_pred[i]] += 1
+                    if loader_type == "train":
+                        train_confusion_matrix[y_true[i]][y_pred[i]] += 1
+                    if loader_type == "validate":
+                        val_confusion_matrix[y_true[i]][y_pred[i]] += 1
                 # print
                 if batch_num % 50 == 0:
                     print_batch_details(
-                        num_of_batches, batch_num, loss, confusion_matrix
+                        num_of_batches,
+                        batch_num,
+                        loss,
+                        train_confusion_matrix,
+                        val_confusion_matrix,
+                        loader_type,
                     )
 
-            print_epoch_details(num_epochs, epoch, confusion_matrix, loss_batches_list)
+            print_epoch_details(
+                num_epochs,
+                epoch,
+                train_confusion_matrix,
+                train_loss_batches_list,
+                val_confusion_matrix,
+                loader_type,
+            )
+    torch.save(NN_model.state_dict(), NN_model.model_save_path)
 
 
 def get_f1_accuracy_by_confusion_matrix(confusion_matrix):
-    # only for 2 classes !!!
-    # TODO: adapt fot more classes
+    # only for 2 classes !
     Tn = confusion_matrix[0][0]
     Fn = confusion_matrix[1][0]
     Tp = confusion_matrix[1][1]
@@ -140,27 +152,59 @@ def get_f1_accuracy_by_confusion_matrix(confusion_matrix):
     return accuracy, f1
 
 
-def print_batch_details(num_of_batches, batch_num, loss, confusion_matrix):
-    accuracy, f1 = get_f1_accuracy_by_confusion_matrix(confusion_matrix)
-    print(
-        "Batch: {}/{} |".format(batch_num + 1, num_of_batches),
-        "Batch Loss: {:.3f} |".format(loss),
-        "Accuracy: {:.3f} |".format(accuracy),
-        "F1: {:.3f}".format(f1),
+def print_batch_details(
+    num_of_batches,
+    batch_num,
+    loss,
+    train_confusion_matrix,
+    val_confusion_matrix,
+    loader_type,
+):
+    train_accuracy, train_f1 = get_f1_accuracy_by_confusion_matrix(
+        train_confusion_matrix
     )
+    if loader_type == "train":
+        print(
+            "Batch: {}/{} |".format(batch_num + 1, num_of_batches),
+            "Batch Loss: {:.3f} |".format(loss),
+            "Train Accuracy: {:.3f} |".format(train_accuracy),
+            "Train F1: {:.3f}".format(train_f1),
+        )
+    if loader_type == "validate":
+        val_accuracy, val_f1 = get_f1_accuracy_by_confusion_matrix(val_confusion_matrix)
+        print(
+            "Val Accuracy: {:.3f} |".format(val_accuracy),
+            "Val F1: {:.3f}".format(val_f1),
+        )
 
 
-def print_epoch_details(num_epochs, epoch, confusion_matrix, loss_batches_list):
+def print_epoch_details(
+    num_epochs,
+    epoch,
+    train_confusion_matrix,
+    loss_batches_list,
+    val_confusion_matrix,
+    loader_type,
+):
     loss_batches = np.array(loss_batches_list)
     num_of_batches = len(loss_batches)
-    accuracy, f1 = get_f1_accuracy_by_confusion_matrix(confusion_matrix)
-
-    print(
-        "Epoch: {}/{}...".format(epoch + 1, num_epochs),
-        "Avg Loss: {:.3f}...".format(loss_batches.mean()),
-        "Accuracy: {:.3f}".format(accuracy),
-        "F1: {:.3f}".format(f1),
+    train_accuracy, train_f1 = get_f1_accuracy_by_confusion_matrix(
+        train_confusion_matrix
     )
+    if loader_type == "train":
+        print(
+            "Epoch: {}/{} |".format(epoch + 1, num_epochs),
+            "Train Avg Loss: {:.3f} |".format(loss_batches.mean()),
+            "Train Accuracy: {:.3f} |".format(train_accuracy),
+            "Train F1: {:.3f}".format(train_f1),
+        )
+    if loader_type == "validate":
+        val_accuracy, val_f1 = get_f1_accuracy_by_confusion_matrix(val_confusion_matrix)
+        print(
+            "Val Accuracy: {:.3f} |".format(val_accuracy),
+            "Val F1: {:.3f}".format(val_f1),
+        )
+
     # plt.plot(np.arange(num_of_batches), loss_batches)
     # plt.title(f"Loss of epoch {epoch} by batch num")
     # plt.xlabel("Batch Num")
@@ -173,11 +217,9 @@ def print_epoch_details(num_epochs, epoch, confusion_matrix, loss_batches_list):
 # -------------------------
 def main():
     embedding_type = "glove"
-    batch_size = 64
+    batch_size = 32
     NER_dataset = NERDataset(embedding_model_type=embedding_type, batch_size=batch_size)
     train_loader, dev_loader, test_loader = NER_dataset.get_preprocessed_data()
-
-    # TODO: change params?
 
     # option 1:
     # is identity - yes / no
@@ -188,12 +230,15 @@ def main():
 
     num_epochs = 5
     hidden_dim = 64
-    # TODO: change according to the embedding
     # single vector size
     input_size = NERDataset.VEC_DIM * (1 + 2 * NERDataset.WINDOW_R)
 
+    model_save_path = f"model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}.pt"
     NN_model = NER_NN(
-        input_size=input_size, num_classes=num_classes, hidden_dim=hidden_dim
+        input_size=input_size,
+        num_classes=num_classes,
+        hidden_dim=hidden_dim,
+        model_save_path=model_save_path,
     )
 
     train_and_plot(

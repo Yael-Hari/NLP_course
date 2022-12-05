@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 
 class NERDataset:
-    WINDOW_R = 2
+    WINDOW_R = 0
     VEC_DIM = 200  # TODO change to 200
     GLOVE_PATH = f"glove-twitter-{VEC_DIM}"
     WORD2VEC_PATH = "word2vec-google-news-300"
@@ -28,6 +28,7 @@ class NERDataset:
             raise Exception("invalid model name")
 
         self.embedding_model = self._load_embedding_model()
+        # self.label_encoder = preprocessing.LabelEncoder()
 
         # paths to data
         self.train_path = "data/train.tagged"
@@ -87,16 +88,18 @@ class NERDataset:
                     s_word, s_tag = s_word
                     y.append(s_tag)
                 vecs_list = []
-                for c_word in sentence[(i_s - W): (i_s + W + 1)]:
+                for c_word in sentence[(i_s - W) : (i_s + W + 1)]:
                     if tagged:
                         c_word, _ = c_word
+
                     c_word = c_word.lower()
+
                     if c_word == "*":
                         c_vec = self.star_vec
                     elif c_word == "~":
                         c_vec = self.tilda_vec
                     elif c_word not in self.embedding_model.key_to_index:
-                        c_vec = torch.zeros(NERDataset.VEC_DIM)
+                        c_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
                     else:
                         c_vec = torch.tensor(self.embedding_model[c_word])
                     vecs_list.append(c_vec)
