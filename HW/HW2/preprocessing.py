@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 
 class NERDataset:
-    WINDOW_R = 0
+    WINDOW_R = 2
     VEC_DIM = 200  # TODO change to 200
     GLOVE_PATH = f"glove-twitter-{VEC_DIM}"
     WORD2VEC_PATH = "word2vec-google-news-300"
@@ -28,7 +28,6 @@ class NERDataset:
             raise Exception("invalid model name")
 
         self.embedding_model = self._load_embedding_model()
-        # self.label_encoder = preprocessing.LabelEncoder()
 
         # paths to data
         self.train_path = "data/train.tagged"
@@ -36,13 +35,15 @@ class NERDataset:
         self.test_path = "data/test.untagged"
 
         # initialize
-        self.star_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
-        self.tilda_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
+        # self.star_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
+        self.star_vec = torch.zeros(NERDataset.VEC_DIM)
+        # self.tilda_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
+        self.tilda_vec = torch.zeros(NERDataset.VEC_DIM)
 
     def _load_embedding_model(self):
         print(f"preparing {self.embedding_model_type}...")
-        glove = downloader.load(self.embedding_model_path)
-        return glove
+        model = downloader.load(self.embedding_model_path)
+        return model
 
     def _get_dataset(self, path: str, tagged: bool):
         W = NERDataset.WINDOW_R
@@ -86,18 +87,16 @@ class NERDataset:
                     s_word, s_tag = s_word
                     y.append(s_tag)
                 vecs_list = []
-                for c_word in sentence[(i_s - W) : (i_s + W + 1)]:
+                for c_word in sentence[(i_s - W): (i_s + W + 1)]:
                     if tagged:
                         c_word, _ = c_word
-
                     c_word = c_word.lower()
-
                     if c_word == "*":
                         c_vec = self.star_vec
                     elif c_word == "~":
                         c_vec = self.tilda_vec
                     elif c_word not in self.embedding_model.key_to_index:
-                        c_vec = torch.rand(NERDataset.VEC_DIM, requires_grad=True)
+                        c_vec = torch.zeros(NERDataset.VEC_DIM)
                     else:
                         c_vec = torch.tensor(self.embedding_model[c_word])
                     vecs_list.append(c_vec)
@@ -117,14 +116,6 @@ class NERDataset:
         # make labels binary
         y_train = torch.Tensor([0 if y == "O" else 1 for y in y_train])
         y_dev = torch.Tensor([0 if y == "O" else 1 for y in y_dev])
-
-        # encode labels: for multy class
-        # self.label_encoder.fit(y_train)
-        # y_train = self.label_encoder.transform(y_train)
-        # y_train = torch.Tensor(y_train)
-        # y_dev = self.label_encoder.transform(y_dev)
-        # y_dev = torch.Tensor(y_dev)
-        # NOTE self.label_encoder.inverse_transform(y_dev) ===> with get the labels back
 
         # create dataset
         train_dataset = TensorDataset(X_train, y_train)
@@ -155,6 +146,8 @@ class EmbeddingDataset:
     def get_preprocessed_data(self):
         X_train, y_train = self._get_dataset("data/train.tagged", tagged=True)
         X_dev, y_dev = self._get_dataset("data/dev.tagged", tagged=True)
+        X_train = torch.stack(X_train)
+        X_dev = torch.stack(X_dev)
         # make labels binary
         y_train = torch.Tensor([0 if y == "O" else 1 for y in y_train])
         y_dev = torch.Tensor([0 if y == "O" else 1 for y in y_dev])

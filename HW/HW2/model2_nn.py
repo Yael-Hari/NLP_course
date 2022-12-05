@@ -104,7 +104,7 @@ def train_and_plot(
 
                 if loader_type == "train":
                     # backprop
-                    loss.backward()
+                    loss.backward(retain_graph=True)
                     # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
                     # nn.utils.clip_grad_norm_(NN_model.parameters(), clip)
                     optimizer.step()
