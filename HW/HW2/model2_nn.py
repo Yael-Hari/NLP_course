@@ -219,7 +219,7 @@ def main():
     embedding_type = "glove"
     batch_size = 32
     NER_dataset = EmbeddingDataset(embedding_model_type=embedding_type)
-    train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size, shuffle=True)
+    train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     # option 1:
     # is identity - yes / no
