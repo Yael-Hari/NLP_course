@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from preprocessing import NERDataset
+from preprocessing import EmbeddingDataset
 
 # -------------------------------
 # Define the Nueral Network Model
@@ -218,20 +218,20 @@ def print_epoch_details(
 def main():
     embedding_type = "glove"
     batch_size = 32
-    NER_dataset = NERDataset(embedding_model_type=embedding_type, batch_size=batch_size)
-    train_loader, dev_loader, test_loader = NER_dataset.get_preprocessed_data()
+    NER_dataset = EmbeddingDataset(embedding_model_type=embedding_type)
+    train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size, shuffle=True)
 
     # option 1:
     # is identity - yes / no
     num_classes = 2
     # option 2:
-    # different classification for differnet identities
+    # different classification for different identities
     # num_classes = ?
 
     num_epochs = 5
     hidden_dim = 64
     # single vector size
-    input_size = NERDataset.VEC_DIM * (1 + 2 * NERDataset.WINDOW_R)
+    input_size = NER_dataset.VEC_DIM
 
     model_save_path = f"model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}.pt"
     NN_model = NER_NN(
