@@ -120,19 +120,19 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 #         y_train = torch.Tensor([0 if y == "O" else 1 for y in y_train])
 #         y_dev = torch.Tensor([0 if y == "O" else 1 for y in y_dev])
 #
-#         # create dataset
-#         train_dataset = TensorDataset(X_train, y_train)
-#         dev_dataset = TensorDataset(X_dev, y_dev)
-#         test_dataset = TensorDataset(X_test)
-#
-#         # create dataloader
-#         train_loader = DataLoader(
-#             train_dataset, batch_size=self.batch_size, shuffle=True
-#         )
-#         dev_loader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True)
-#         test_loader = DataLoader(
-#             test_dataset, batch_size=self.batch_size, shuffle=False
-#         )
+        # # create dataset
+        # train_dataset = TensorDataset(X_train, y_train)
+        # dev_dataset = TensorDataset(X_dev, y_dev)
+        # test_dataset = TensorDataset(X_test)
+        #
+        # # create dataloader
+        # train_loader = DataLoader(
+        #     train_dataset, batch_size=self.batch_size, shuffle=True
+        # )
+        # dev_loader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=True)
+        # test_loader = DataLoader(
+        #     test_dataset, batch_size=self.batch_size, shuffle=False
+        # )
 #
 #         return train_loader, dev_loader, test_loader
 
@@ -152,8 +152,15 @@ class EmbeddingDataset:
 
     def get_data_loaders(self, batch_size):
         X_train, y_train, X_dev, y_dev = self.get_datasets()
-        train_dataloader = DataLoader({'X': X_train, 'y': y_train}, batch_size=batch_size, shuffle=True)
-        dev_dataloader = DataLoader({'X': X_dev, 'y': y_dev}, batch_size=batch_size, shuffle=False)
+
+        # create dataset
+        train_dataset = TensorDataset(X_train, y_train)
+        dev_dataset = TensorDataset(X_dev, y_dev)
+
+        # create dataloader
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=True)
+
         return train_dataloader, dev_dataloader
 
     def get_X_test(self):
