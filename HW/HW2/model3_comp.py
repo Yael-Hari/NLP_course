@@ -28,15 +28,15 @@ class LSTM_NER_NN(nn.Module):
     def forward(self, sentences_embeddings, sen_lengths):
         # pack
         packed_input = pack_padded_sequence(
-            sentences_embeddings, sen_lengths, batch_first=True
+            sentences_embeddings, sen_lengths, batch_first=True, enforce_sorted=False
         )
         lstm_packed_output, (ht, ct) = self.lstm(input=packed_input)
         # unpack
-        lstm_out, input_sizes = pad_packed_sequence(
+        lstm_out_padded, out_lengths = pad_packed_sequence(
             lstm_packed_output, batch_first=True
         )
         # hidden -> tag score -> prediction -> loss
-        tag_space = self.hidden2tag(lstm_out)
+        tag_space = self.hidden2tag(lstm_out_padded)
         tag_score = F.softmax(tag_space, dim=1)
         return tag_score
 
