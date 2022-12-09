@@ -9,10 +9,11 @@ from torch.utils.data import DataLoader, TensorDataset
 
 
 class WordsEmbeddingDataset:
-    def __init__(self, embedding_model_path="glove-twitter-200", learn_unknown=False):
+    def __init__(self, embedding_model_type="glove", learn_unknown=False):
         self.VEC_DIM = 200
-        self.embedding_model_path = embedding_model_path
-        print("prepering embedding...")
+        self.embedding_model_type = embedding_model_type
+        self.embedding_model_path = "glove-twitter-200"
+        print("prepering glove...")
         self.embedding_model = downloader.load(self.embedding_model_path)
         self.learn_unknown = learn_unknown
 
@@ -87,11 +88,23 @@ class WordsEmbeddingDataset:
 
 
 class SentencesEmbeddingDataset:
-    def __init__(self, embedding_model_type="glove", learn_unknown=False):
+    """
+    fasttext-wiki-news-subwords-300
+    glove-twitter-100
+    glove-twitter-200
+    glove-twitter-25
+    glove-twitter-50
+    glove-wiki-gigaword-100
+    glove-wiki-gigaword-200
+    glove-wiki-gigaword-300
+    glove-wiki-gigaword-50
+    word2vec-google-news-300
+    word2vec-ruscorpora-300
+    """
+    def __init__(self, embedding_model_path="glove-twitter-200", learn_unknown=False):
         self.VEC_DIM = 200
-        self.embedding_model_type = embedding_model_type
-        self.embedding_model_path = "glove-twitter-200"
-        print("prepering glove...")
+        self.embedding_model_path = embedding_model_path
+        print("preparing embedding...")
         self.embedding_model = downloader.load(self.embedding_model_path)
         self.learn_unknown = learn_unknown
 
