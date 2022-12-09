@@ -159,8 +159,8 @@ class SentencesEmbeddingDataset:
             self.train_path, tagged=True
         )
         # count how many of every tag in train:
-        self.train_num_label_1 = sum(y_train)
-        self.train_num_label_0 = len(y_train) - sum(y_train)
+        self.train_num_label_1 = sum(torch.concat(y_train))
+        self.train_num_label_0 = len(torch.concat(y_train)) - self.train_num_label_1
 
         # pad
         X_train = rnn.pad_sequence(X_train, batch_first=True, padding_value=0.0)
