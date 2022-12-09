@@ -1,7 +1,7 @@
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.svm import SVC
 from sklearn.metrics import f1_score
-from preprocessing import EmbeddingDataset
+from preprocessing import WordsEmbeddingDataset
 from sklearn.ensemble import RandomForestRegressor
 
 
@@ -27,7 +27,7 @@ class Model1:
 
 
 def main():
-    dataset = EmbeddingDataset()
+    dataset = WordsEmbeddingDataset()
     X_train, y_train, X_dev, y_dev = dataset.get_datasets()
 
     model_type = "KNN"

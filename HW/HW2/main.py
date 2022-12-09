@@ -2,12 +2,12 @@
 # import gensim
 from model1_simple import Model1
 # import torch
-from preprocessing import EmbeddingDataset
+from preprocessing import WordsEmbeddingDataset
 
 
 def main():
-    ds = EmbeddingDataset()
-    train_dataloader, dev_dataloader = ds.get_dataloaders(batch_size=64, shuffle=True)
+    ds = WordsEmbeddingDataset()
+    train_dataloader, dev_dataloader = ds.get_data_loaders(batch_size=64, shuffle=True)
     # ##############
     # ##  PARAMS  ##
     # ##############

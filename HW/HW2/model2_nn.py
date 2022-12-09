@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from preprocessing import EmbeddingDataset
+from preprocessing import WordsEmbeddingDataset
 from train_loop_model2 import train_and_plot
 
 # -------------------------------
@@ -35,7 +35,7 @@ class NER_NN(nn.Module):
 def main():
     embedding_type = "glove"
     batch_size = 32
-    NER_dataset = EmbeddingDataset(
+    NER_dataset = WordsEmbeddingDataset(
         embedding_model_type=embedding_type, learn_unknown=True
     )
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
