@@ -58,15 +58,16 @@ class LSTM_NER_NN(nn.Module):
 # Putting it all together
 # -------------------------
 def main():
-    embedding_type = "glove"
     batch_size = 32
-    NER_dataset = SentencesEmbeddingDataset(embedding_model_type=embedding_type)
+    NER_dataset = SentencesEmbeddingDataset(
+        embedding_model_path="word2vec-google-news-300", vec_dim=300
+    )
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     num_classes = 2
-    num_epochs = 20
-    hidden_dim = 64
-    embedding_dim = NER_dataset.VEC_DIM
+    num_epochs = 30
+    hidden_dim = 32
+    embedding_dim = NER_dataset.vec_dim
     lr = 0.001
     # activation = nn.ReLU()
     # activation = nn.Sigmoid()

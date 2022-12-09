@@ -9,8 +9,8 @@ from torch.utils.data import DataLoader, TensorDataset
 
 
 class WordsEmbeddingDataset:
-    def __init__(self, embedding_model_type="glove", learn_unknown=False):
-        self.VEC_DIM = 200
+    def __init__(self, embedding_model_type="glove", learn_unknown=False, vec_dim=200):
+        self.vec_dim = vec_dim
         self.embedding_model_type = embedding_model_type
         self.embedding_model_path = "glove-twitter-200"
         print("prepering glove...")
@@ -22,7 +22,7 @@ class WordsEmbeddingDataset:
         self.dev_path = "data/dev.tagged"
         self.test_path = "data/test.untagged"
 
-        self.unknown_word_vec = torch.rand(self.VEC_DIM, requires_grad=True)
+        self.unknown_word_vec = torch.rand(self.vec_dim, requires_grad=True)
 
     def get_data_loaders(self, batch_size):
         X_train, y_train, X_dev, y_dev = self.get_datasets()
@@ -78,7 +78,7 @@ class WordsEmbeddingDataset:
                 if self.learn_unknown:
                     u_c = self.unknown_word_vec
                 else:
-                    u_c = torch.zeros(self.VEC_DIM)
+                    u_c = torch.zeros(self.vec_dim)
             else:
                 u_c = torch.tensor(self.embedding_model[word])
             X.append(u_c)
@@ -101,8 +101,11 @@ class SentencesEmbeddingDataset:
     word2vec-google-news-300
     word2vec-ruscorpora-300
     """
-    def __init__(self, embedding_model_path="glove-twitter-200", learn_unknown=False):
-        self.VEC_DIM = 200
+
+    def __init__(
+        self, embedding_model_path="glove-twitter-200", learn_unknown=False, vec_dim=200
+    ):
+        self.vec_dim = vec_dim
         self.embedding_model_path = embedding_model_path
         print("preparing embedding...")
         self.embedding_model = downloader.load(self.embedding_model_path)
@@ -117,7 +120,7 @@ class SentencesEmbeddingDataset:
         # self.train_path = "data/debug.tagged"
         # self.dev_path = "data/debug.tagged"
 
-        # self.unknown_word_vec = torch.rand(self.VEC_DIM, requires_grad=True)
+        # self.unknown_word_vec = torch.rand(self.vec_dim, requires_grad=True)
 
     def get_data_loaders(self, batch_size):
         (
@@ -203,9 +206,9 @@ class SentencesEmbeddingDataset:
                 word = word.lower()
                 if word not in self.embedding_model.key_to_index:
                     if self.learn_unknown:
-                        word_vec = torch.rand(self.VEC_DIM, requires_grad=True)
+                        word_vec = torch.rand(self.vec_dim, requires_grad=True)
                     else:
-                        word_vec = torch.zeros(self.VEC_DIM)
+                        word_vec = torch.zeros(self.vec_dim)
                 else:
                     word_vec = torch.tensor(self.embedding_model[word])
                 X_curr_sentence.append(word_vec)
