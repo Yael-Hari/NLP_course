@@ -1,25 +1,18 @@
-# from abc import ABC
-# import numpy as np
-# import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from torch.optim import Adam
 
-from model2_nn import train_and_plot
-
-# from torch.utils.data import Dataset, DataLoader
-# import pandas as pd
-# from sklearn.model_selection import train_test_split
-# from tqdm import tqdm, trange
 from preprocessing import SentencesEmbeddingDataset
+from train_loop_model3 import train_and_plot_LSTM
 
 
 class LSTM_NER_NN(nn.Module):
-    def __init__(self, input_size, hidden_dim, num_classes, model_save_path):
+    def __init__(self, embedding_dim, hidden_dim, num_classes, model_save_path):
         super().__init__()
-        self.embedding_dim = input_size
         self.hidden_dim = hidden_dim
         self.lstm = nn.LSTM(
-            input_size=self.embedding_dim,
+            input_size=embedding_dim,
             hidden_size=self.hidden_dim,
             num_layers=1,
             batch_first=True,
@@ -29,25 +22,23 @@ class LSTM_NER_NN(nn.Module):
         self.hidden2tag = nn.Sequential(
             nn.ReLU(), nn.Linear(self.hidden_dim, num_classes)
         )
-        self.loss_func = nn.NLLLoss()
         self.model_save_path = model_save_path
         self.num_classes = num_classes
 
-    def forward(self, embeds, tags=None):
-        # LSTM
-        batch_size = len(embeds)
-        sequence_length = -1
-        embedding_size = self.embedding_dim
-        lstm_out, _ = self.lstm(
-            input=embeds.view(batch_size, sequence_length, embedding_size)
+    def forward(self, sentences_embeddings, sen_lengths):
+        # pack
+        packed_input = pack_padded_sequence(
+            sentences_embeddings, sen_lengths, batch_first=True
+        )
+        lstm_packed_output, (ht, ct) = self.lstm(input=packed_input)
+        # unpack
+        lstm_out, input_sizes = pad_packed_sequence(
+            lstm_packed_output, batch_first=True
         )
         # hidden -> tag score -> prediction -> loss
         tag_space = self.hidden2tag(lstm_out)
         tag_score = F.softmax(tag_space, dim=1)
-        if tags is None:
-            return tag_score, None
-        loss = self.loss_func(tag_score, tags)
-        return tag_score, loss
+        return tag_score
 
 
 # -------------------------
@@ -59,19 +50,15 @@ def main():
     NER_dataset = SentencesEmbeddingDataset(embedding_model_type=embedding_type)
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
-    # option 1:
-    # is identity - yes / no
     num_classes = 2
-
     num_epochs = 5
     hidden_dim = 64
-    # single vector size
-    input_size = NER_dataset.VEC_DIM
+    input_size = NER_dataset.VEC_DIM  # single vector size
     lr = 0.001
-
     model_save_path = (
         f"LSTM_model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}_lr_{lr}.pt"
     )
+
     LSTM_model = LSTM_NER_NN(
         input_size=input_size,
         num_classes=num_classes,
@@ -79,13 +66,17 @@ def main():
         model_save_path=model_save_path,
     )
 
-    train_and_plot(
-        NN_model=LSTM_model,
+    optimizer = Adam(params=LSTM_NER_NN.parameters(), lr=lr)
+    loss_func = nn.NLLLoss()
+
+    train_and_plot_LSTM(
+        LSTM_model=LSTM_model,
         train_loader=train_loader,
         num_epochs=num_epochs,
         batch_size=batch_size,
         val_loader=dev_loader,
-        lr=lr,
+        optimizer=optimizer,
+        loss_func=loss_func,
     )
 
 
