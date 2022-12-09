@@ -10,7 +10,7 @@ from model2_nn import train_and_plot
 # import pandas as pd
 # from sklearn.model_selection import train_test_split
 # from tqdm import tqdm, trange
-from preprocessing import EmbeddingDataset
+from preprocessing import SentencesEmbeddingDataset
 
 
 class LSTM_NER_NN(nn.Module):
@@ -56,7 +56,7 @@ class LSTM_NER_NN(nn.Module):
 def main():
     embedding_type = "glove"
     batch_size = 32
-    NER_dataset = EmbeddingDataset(embedding_model_type=embedding_type)
+    NER_dataset = SentencesEmbeddingDataset(embedding_model_type=embedding_type)
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     # option 1:
