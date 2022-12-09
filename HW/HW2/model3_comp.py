@@ -10,6 +10,7 @@ from train_loop_model3 import train_and_plot_LSTM
 class LSTM_NER_NN(nn.Module):
     def __init__(self, embedding_dim, hidden_dim, num_classes, model_save_path):
         super().__init__()
+        self.embedding_dim = embedding_dim
         self.hidden_dim = hidden_dim
         self.lstm = nn.LSTM(
             input_size=embedding_dim,
