@@ -6,3 +6,6 @@ HW/HW2/__pycache__/utils.cpython-38.pyc
 HW/HW2/__pycache__/train_loop_model3.cpython-38.pyc
 HW/HW2/__pycache__/model3_comp.cpython-38.pyc
 HW/HW2/.vscode/launch.json
+HW/HW2/data/debug.tagged
+HW/HW2/LSTM_model_stateDict_batchSize_32_hidden_32_lr_0.001.pt
+HW/HW2/LSTM_model_stateDict_batchSize_32_hidden_64_lr_0.001.pt

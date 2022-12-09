@@ -1,5 +1,6 @@
 # import matplotlib.pyplot as plt
 import numpy as np
+import torch
 
 
 def get_f1_accuracy_by_confusion_matrix(confusion_matrix):
@@ -74,3 +75,11 @@ def print_epoch_details(
     # plt.xlabel("Batch Num")
     # plt.ylabel("Loss")
     # plt.show()
+
+
+def remove_padding(padded, lengths):
+    unpadded = []
+    for x, len_x in zip(padded, lengths):
+        x_unpad = torch.Tensor(x[:len_x])
+        unpadded.append(x_unpad)
+    return torch.concat(unpadded)

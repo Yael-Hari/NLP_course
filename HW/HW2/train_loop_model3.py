@@ -1,8 +1,9 @@
 import numpy as np
 import torch
-from tqdm import tqdm
+from torch.nn.functional import one_hot
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-from utils import print_batch_details, print_epoch_details
+from utils import print_batch_details, print_epoch_details, remove_padding
 
 
 def train_and_plot_LSTM(
@@ -44,9 +45,7 @@ def train_and_plot_LSTM(
         for loader_type, data_loader in data_loaders.items():
             num_of_batches = len(data_loader)
 
-            for batch_num, (sentences, labels, sen_lengths) in enumerate(
-                tqdm(data_loader)
-            ):
+            for batch_num, (sentences, labels, sen_lengths) in enumerate(data_loader):
                 # if training on gpu
                 sentences, labels, sen_lengths = (
                     sentences.to(device),
@@ -55,17 +54,20 @@ def train_and_plot_LSTM(
                 )
 
                 # forward
-                # ??????????????????????
-                # IMPORTANT - change the dimensions of x before it enters the NN,
-                # batch size must always be first
-                # x = inputs.unsqueeze(0)  # x.size() -> [1, batch_size]
-                # batch_size = labels.shape[0]
-                # x = x.view(batch_size, -1)  # x.size() -> [batch_size, 1]
-                # ??????????????????????
                 outputs = LSTM_model(sentences, sen_lengths)
 
+                # labels
+                packed_labels = pack_padded_sequence(
+                    labels, sen_lengths, batch_first=True, enforce_sorted=False
+                )
+                unpacked_labels, labels_lengths = pad_packed_sequence(
+                    packed_labels, batch_first=True
+                )
+                unpadded_labels = remove_padding(unpacked_labels, labels_lengths).long()
+                labels_one_hot = one_hot(unpadded_labels, num_classes=num_classes)
+
                 # loss
-                loss = loss_func(outputs.squeeze(), labels.long())
+                loss = loss_func(outputs, labels_one_hot.float())
 
                 if loader_type == "train":
                     train_loss_batches_list.append(loss.detach().cpu())
@@ -75,8 +77,8 @@ def train_and_plot_LSTM(
                     optimizer.zero_grad()
 
                 # predictions
-                preds = outputs.argmax(dim=-1).clone().detach().cpu()
-                y_true = np.array(labels.cpu().view(-1).int())
+                preds = outputs.argmax(dim=1).clone().detach().cpu()
+                y_true = np.array(unpadded_labels.cpu().view(-1).int())
                 y_pred = np.array(preds.view(-1))
                 n_preds = len(y_pred)
                 for i in range(n_preds):
@@ -85,7 +87,7 @@ def train_and_plot_LSTM(
                     if loader_type == "validate":
                         val_confusion_matrix[y_true[i]][y_pred[i]] += 1
                 # print
-                if batch_num % 50 == 0:
+                if batch_num % 100 == 0:
                     print_batch_details(
                         num_of_batches,
                         batch_num,
@@ -103,4 +105,5 @@ def train_and_plot_LSTM(
                 val_confusion_matrix,
                 loader_type,
             )
+
     torch.save(LSTM_model.state_dict(), LSTM_model.model_save_path)

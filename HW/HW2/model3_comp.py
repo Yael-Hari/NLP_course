@@ -5,26 +5,36 @@ from torch.optim import Adam
 
 from preprocessing import SentencesEmbeddingDataset
 from train_loop_model3 import train_and_plot_LSTM
+from utils import remove_padding
 
 
 class LSTM_NER_NN(nn.Module):
-    def __init__(self, embedding_dim, hidden_dim, num_classes, model_save_path):
+    def __init__(
+        self,
+        embedding_dim,
+        hidden_dim,
+        num_classes,
+        model_save_path,
+        activation,
+        num_layers,
+    ):
         super().__init__()
         self.embedding_dim = embedding_dim
         self.hidden_dim = hidden_dim
         self.lstm = nn.LSTM(
             input_size=embedding_dim,
             hidden_size=self.hidden_dim,
-            num_layers=1,
+            num_layers=num_layers,
             batch_first=True,
             dropout=0,
             bidirectional=True,
         )
         self.hidden2tag = nn.Sequential(
-            nn.ReLU(), nn.Linear(self.hidden_dim, num_classes)
+            activation, nn.Linear(self.hidden_dim * 2, num_classes)
         )
         self.model_save_path = model_save_path
         self.num_classes = num_classes
+        print(f"{hidden_dim=} | {activation=} | {num_layers=}")
 
     def forward(self, sentences_embeddings, sen_lengths):
         # pack
@@ -36,8 +46,10 @@ class LSTM_NER_NN(nn.Module):
         lstm_out_padded, out_lengths = pad_packed_sequence(
             lstm_packed_output, batch_first=True
         )
+        # reshape from sentences to words
+        words_lstm_out_unpadded = remove_padding(lstm_out_padded, out_lengths)
         # hidden -> tag score -> prediction -> loss
-        tag_space = self.hidden2tag(lstm_out_padded)
+        tag_space = self.hidden2tag(words_lstm_out_unpadded)
         tag_score = F.softmax(tag_space, dim=1)
         return tag_score
 
@@ -52,10 +64,14 @@ def main():
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     num_classes = 2
-    num_epochs = 5
-    hidden_dim = 64
+    num_epochs = 10
+    hidden_dim = 32
     embedding_dim = NER_dataset.VEC_DIM
     lr = 0.001
+    # activation = nn.ReLU()
+    activation = nn.Sigmoid()
+    # activation = nn.Tanh()
+    num_layers = 1
     model_save_path = (
         f"LSTM_model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}_lr_{lr}.pt"
     )
@@ -65,10 +81,12 @@ def main():
         num_classes=num_classes,
         hidden_dim=hidden_dim,
         model_save_path=model_save_path,
+        activation=activation,
+        num_layers=num_layers,
     )
 
     optimizer = Adam(params=LSTM_model.parameters(), lr=lr)
-    loss_func = nn.NLLLoss()
+    loss_func = nn.CrossEntropyLoss()
 
     train_and_plot_LSTM(
         LSTM_model=LSTM_model,
