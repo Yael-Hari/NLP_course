@@ -3,7 +3,7 @@ import torch
 from torch.nn.functional import one_hot
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-from utils import print_batch_details, print_epoch_details, remove_padding
+from utils import print_epoch_details, remove_padding
 
 
 def train_and_plot_LSTM(
@@ -43,7 +43,7 @@ def train_and_plot_LSTM(
         train_loss_batches_list = []
 
         for loader_type, data_loader in data_loaders.items():
-            num_of_batches = len(data_loader)
+            # num_of_batches = len(data_loader)
 
             for batch_num, (sentences, labels, sen_lengths) in enumerate(data_loader):
                 # if training on gpu
@@ -87,15 +87,15 @@ def train_and_plot_LSTM(
                     if loader_type == "validate":
                         val_confusion_matrix[y_true[i]][y_pred[i]] += 1
                 # print
-                if batch_num % 100 == 0:
-                    print_batch_details(
-                        num_of_batches,
-                        batch_num,
-                        loss,
-                        train_confusion_matrix,
-                        val_confusion_matrix,
-                        loader_type,
-                    )
+                # if batch_num % 100 == 0:
+                #     print_batch_details(
+                #         num_of_batches,
+                #         batch_num,
+                #         loss,
+                #         train_confusion_matrix,
+                #         val_confusion_matrix,
+                #         loader_type,
+                #     )
 
             print_epoch_details(
                 num_epochs,

@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
@@ -60,7 +61,7 @@ class LSTM_NER_NN(nn.Module):
 def main():
     batch_size = 32
     NER_dataset = SentencesEmbeddingDataset(
-        embedding_model_path="word2vec-google-news-300", vec_dim=300
+        embedding_model_path="glove-twitter-200", vec_dim=200
     )
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
@@ -87,7 +88,7 @@ def main():
     )
 
     optimizer = Adam(params=LSTM_model.parameters(), lr=lr)
-    loss_func = nn.CrossEntropyLoss()
+    loss_func = nn.CrossEntropyLoss(weight=torch.tensor([0.2, 0.8]))
 
     train_and_plot_LSTM(
         LSTM_model=LSTM_model,
