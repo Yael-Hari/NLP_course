@@ -54,9 +54,6 @@ def train_and_plot_LSTM(
                     sen_lengths.to(device),
                 )
 
-                # optimize
-                optimizer.zero_grad()
-
                 # forward
                 # ??????????????????????
                 # IMPORTANT - change the dimensions of x before it enters the NN,
@@ -75,6 +72,7 @@ def train_and_plot_LSTM(
                     # backprop
                     loss.backward(retain_graph=True)
                     optimizer.step()
+                    optimizer.zero_grad()
 
                 # predictions
                 preds = outputs.argmax(dim=-1).clone().detach().cpu()
