@@ -48,7 +48,7 @@ def train_and_plot_LSTM(
                 tqdm(data_loader)
             ):
                 # if training on gpu
-                sentences, labels = (
+                sentences, labels, sen_lengths = (
                     sentences.to(device),
                     labels.to(device),
                     sen_lengths.to(device),
