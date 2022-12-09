@@ -64,13 +64,13 @@ def main():
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     num_classes = 2
-    num_epochs = 10
-    hidden_dim = 32
+    num_epochs = 20
+    hidden_dim = 64
     embedding_dim = NER_dataset.VEC_DIM
     lr = 0.001
     # activation = nn.ReLU()
-    activation = nn.Sigmoid()
-    # activation = nn.Tanh()
+    # activation = nn.Sigmoid()
+    activation = nn.Tanh()
     num_layers = 1
     model_save_path = (
         f"LSTM_model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}_lr_{lr}.pt"

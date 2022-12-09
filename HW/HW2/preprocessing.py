@@ -97,13 +97,13 @@ class SentencesEmbeddingDataset:
         self.learn_unknown = learn_unknown
 
         # paths to data
-        # self.train_path = "data/train.tagged"
-        # self.dev_path = "data/dev.tagged"
+        self.train_path = "data/train.tagged"
+        self.dev_path = "data/dev.tagged"
         self.test_path = "data/test.untagged"
 
         # !!!!!! DEBUG
-        self.train_path = "data/debug.tagged"
-        self.dev_path = "data/debug.tagged"
+        # self.train_path = "data/debug.tagged"
+        # self.dev_path = "data/debug.tagged"
 
         # self.unknown_word_vec = torch.rand(self.VEC_DIM, requires_grad=True)
 

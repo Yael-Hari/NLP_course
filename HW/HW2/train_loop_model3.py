@@ -105,5 +105,9 @@ def train_and_plot_LSTM(
                 val_confusion_matrix,
                 loader_type,
             )
+            if loader_type == "train":
+                print(train_confusion_matrix)
+            if loader_type == "validate":
+                print(val_confusion_matrix)
 
     torch.save(LSTM_model.state_dict(), LSTM_model.model_save_path)
