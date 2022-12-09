@@ -9,11 +9,10 @@ from torch.utils.data import DataLoader, TensorDataset
 
 
 class WordsEmbeddingDataset:
-    def __init__(self, embedding_model_type="glove", learn_unknown=False):
+    def __init__(self, embedding_model_path="glove-twitter-200", learn_unknown=False):
         self.VEC_DIM = 200
-        self.embedding_model_type = embedding_model_type
-        self.embedding_model_path = "glove-twitter-200"
-        print("prepering glove...")
+        self.embedding_model_path = embedding_model_path
+        print("prepering embedding...")
         self.embedding_model = downloader.load(self.embedding_model_path)
         self.learn_unknown = learn_unknown
 
