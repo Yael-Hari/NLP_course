@@ -67,7 +67,7 @@ def main():
         model_save_path=model_save_path,
     )
 
-    optimizer = Adam(params=LSTM_NER_NN.parameters(), lr=lr)
+    optimizer = Adam(params=LSTM_model.parameters(), lr=lr)
     loss_func = nn.NLLLoss()
 
     train_and_plot_LSTM(
