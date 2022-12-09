@@ -53,14 +53,14 @@ def main():
     num_classes = 2
     num_epochs = 5
     hidden_dim = 64
-    input_size = NER_dataset.VEC_DIM  # single vector size
+    embedding_dim = NER_dataset.VEC_DIM
     lr = 0.001
     model_save_path = (
         f"LSTM_model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}_lr_{lr}.pt"
     )
 
     LSTM_model = LSTM_NER_NN(
-        input_size=input_size,
+        embedding_dim=embedding_dim,
         num_classes=num_classes,
         hidden_dim=hidden_dim,
         model_save_path=model_save_path,
@@ -73,7 +73,6 @@ def main():
         LSTM_model=LSTM_model,
         train_loader=train_loader,
         num_epochs=num_epochs,
-        batch_size=batch_size,
         val_loader=dev_loader,
         optimizer=optimizer,
         loss_func=loss_func,

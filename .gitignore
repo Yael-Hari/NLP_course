@@ -1,3 +1,6 @@
 HW/HW2/__pycache__/preprocessing.cpython-38.pyc
 .DS_Store
 .gitignore
+HW/HW2/model3_comp.py
+HW/HW2/__pycache__/utils.cpython-38.pyc
+HW/HW2/__pycache__/train_loop_model3.cpython-38.pyc

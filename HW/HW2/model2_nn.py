@@ -66,7 +66,6 @@ def main():
         NN_model=NN_model,
         train_loader=train_loader,
         num_epochs=num_epochs,
-        batch_size=batch_size,
         val_loader=dev_loader,
         optimizer=optimizer,
         loss_func=loss_func,
