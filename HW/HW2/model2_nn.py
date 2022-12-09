@@ -33,7 +33,7 @@ class NER_NN(nn.Module):
 
 
 def train_and_plot(
-    NN_model, train_loader, num_epochs: int, batch_size: int, val_loader=None
+    NN_model, train_loader, num_epochs: int, lr: float, batch_size: int, val_loader=None
 ):
 
     # -------
@@ -56,7 +56,7 @@ def train_and_plot(
     # many are available such as SGD, Adam, RMSprop, Adagrad..
     # optimizer = torch.optim.SGD(params=NN_model.parameters(), lr=0.2)
     # clip = 1000  # gradient clipping
-    optimizer = torch.optim.Adam(params=NN_model.parameters())
+    optimizer = torch.optim.Adam(params=NN_model.parameters(), lr=lr)
 
     loss_func = torch.nn.CrossEntropyLoss()
 
@@ -218,7 +218,7 @@ def print_epoch_details(
 def main():
     embedding_type = "glove"
     batch_size = 32
-    NER_dataset = EmbeddingDataset(embedding_model_type=embedding_type)
+    NER_dataset = EmbeddingDataset(embedding_model_type=embedding_type, learn_unknown=True)
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     # option 1:
@@ -232,8 +232,9 @@ def main():
     hidden_dim = 64
     # single vector size
     input_size = NER_dataset.VEC_DIM
+    lr = 0.001
 
-    model_save_path = f"model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}.pt"
+    model_save_path = f"model2_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}_lr_{lr}.pt"
     NN_model = NER_NN(
         input_size=input_size,
         num_classes=num_classes,
@@ -247,6 +248,7 @@ def main():
         num_epochs=num_epochs,
         batch_size=batch_size,
         val_loader=dev_loader,
+        lr=lr
     )
 
 

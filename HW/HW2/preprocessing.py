@@ -138,17 +138,20 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 
 class EmbeddingDataset:
-    def __init__(self, embedding_model_type="glove"):
+    def __init__(self, embedding_model_type="glove", learn_unknown=False):
         self.VEC_DIM = 200
         self.embedding_model_type = embedding_model_type
         self.embedding_model_path = f"glove-twitter-200"
         print("prepering glove...")
         self.embedding_model = downloader.load(self.embedding_model_path)
+        self.learn_unknown = learn_unknown
 
         # paths to data
         self.train_path = "data/train.tagged"
         self.dev_path = "data/dev.tagged"
         self.test_path = "data/test.untagged"
+
+        self.unknown_word_vec = torch.rand(self.VEC_DIM, requires_grad=True)
 
     def get_data_loaders(self, batch_size):
         X_train, y_train, X_dev, y_dev = self.get_datasets()
@@ -158,6 +161,7 @@ class EmbeddingDataset:
         dev_dataset = TensorDataset(X_dev, y_dev)
 
         # create dataloader
+        torch.manual_seed(42)
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=True)
 
@@ -198,7 +202,10 @@ class EmbeddingDataset:
                 y.append(tag)
             word = word.lower()
             if word not in self.embedding_model.key_to_index:
-                u_c = torch.zeros(self.VEC_DIM)
+                if self.learn_unknown:
+                    u_c = self.unknown_word_vec
+                else:
+                    u_c = torch.zeros(self.VEC_DIM)
             else:
                 u_c = torch.tensor(self.embedding_model[word])
             X.append(u_c)
