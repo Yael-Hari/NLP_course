@@ -137,25 +137,23 @@ def main():
     # word2vec-google-news-300
     # word2vec-ruscorpora-300
 
-    # ,
+    # ("glove-twitter-200", 200),
+    # ("glove-wiki-gigaword-300", 300),
+    # ("word2vec-google-news-300", 300),
+    # hidden_list = [64, 128, 256, 280]
     # (nn.BCEWithLogitsLoss(pos_weight=class_weights), "BCELogit")
 
-    embed_list = [
-        ("glove-twitter-200", 200),
-        ("word2vec-google-news-300", 300),
-        ("glove-wiki-gigaword-300", 300)
-    ]
-    hidden_list = [32, 64, 128, 256]
-    dropout_list = [0, 0.2, 0.4, 0.5]
+    embed_list = [("glove-twitter-200", 200)]
+    hidden_list = [128, 160, 180, 200]
+    dropout_list = [0.1, 0.2, 0.4, 0.5]
     w_list = [
+        torch.tensor([0.05, 0.95]),
         torch.tensor([0.1, 0.9]),
-        torch.tensor([0.2, 0.8]),
-        torch.tensor([0.4, 0.6]),
     ]
 
     for embedding_name, vec_dim in embed_list:
         NER_dataset = SentencesEmbeddingDataset(
-            embedding_model_path=embedding_name, vec_dim=vec_dim
+            embedding_model_path=embedding_name, vec_dim=vec_dim, learn_unknown=False
         )
         for hidden_dim in hidden_list:
             for dropout in dropout_list:
