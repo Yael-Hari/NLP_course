@@ -27,11 +27,14 @@ class LSTM_NER_NN(nn.Module):
             hidden_size=self.hidden_dim,
             num_layers=num_layers,
             batch_first=True,
-            dropout=0,
+            dropout=0.2,
             bidirectional=True,
         )
         self.hidden2tag = nn.Sequential(
-            activation, nn.Linear(self.hidden_dim * 2, num_classes)
+            activation, nn.Linear(self.hidden_dim * 2, self.hidden_dim)
+        )
+        self.hidden2tag_layer2 = nn.Sequential(
+            activation, nn.Linear(self.hidden_dim, num_classes)
         )
         self.model_save_path = model_save_path
         self.num_classes = num_classes
@@ -51,6 +54,7 @@ class LSTM_NER_NN(nn.Module):
         words_lstm_out_unpadded = remove_padding(lstm_out_padded, out_lengths)
         # hidden -> tag score -> prediction -> loss
         tag_space = self.hidden2tag(words_lstm_out_unpadded)
+        tag_space = self.hidden2tag_layer2(tag_space)
         tag_score = F.softmax(tag_space, dim=1)
         return tag_score
 
@@ -81,8 +85,8 @@ def main():
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     num_classes = 2
-    num_epochs = 30
-    hidden_dim = 64
+    num_epochs = 15
+    hidden_dim = 200
     embedding_dim = NER_dataset.vec_dim
     lr = 0.001
     # activation = nn.ReLU()
@@ -90,7 +94,7 @@ def main():
     activation = nn.Tanh()
     activation_name = "Tanh"
 
-    class_weights = torch.tensor([0.25, 0.75])
+    class_weights = torch.tensor([0.2, 0.8])
 
     num_layers = 1
     model_save_path = (

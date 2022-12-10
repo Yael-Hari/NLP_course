@@ -121,8 +121,6 @@ class SentencesEmbeddingDataset:
         # self.dev_path = "data/debug.tagged"
 
         # self.unknown_word_vec = torch.rand(self.vec_dim, requires_grad=True)
-        self.train_num_label_0 = 0
-        self.train_num_label_1 = 0
 
     def get_data_loaders(self, batch_size):
         (
@@ -154,26 +152,12 @@ class SentencesEmbeddingDataset:
         return X_test, sentences_lengths_test
 
     def get_datasets(self):
-        # train
         X_train, y_train, sentences_lengths_train = self._get_dataset_from_path(
             self.train_path, tagged=True
         )
-        # count how many of every tag in train:
-        self.train_num_label_1 = sum(torch.concat(y_train))
-        self.train_num_label_0 = len(torch.concat(y_train)) - self.train_num_label_1
-
-        # pad
-        X_train = rnn.pad_sequence(X_train, batch_first=True, padding_value=0.0)
-        y_train = rnn.pad_sequence(y_train, batch_first=True, padding_value=0.0)
-
-        # dev
         X_dev, y_dev, sentences_lengths_dev = self._get_dataset_from_path(
             self.dev_path, tagged=True
         )
-        # pad
-        X_dev = rnn.pad_sequence(y_dev, batch_first=True, padding_value=0.0)
-        y_dev = rnn.pad_sequence(y_dev, batch_first=True, padding_value=0.0)
-
         return (
             X_train,
             y_train,
@@ -235,12 +219,15 @@ class SentencesEmbeddingDataset:
             if tagged:
                 y.append(y_curr_sentence)
 
+        # pad X
+        X = rnn.pad_sequence(X, batch_first=True, padding_value=0.0)
         if tagged:
             # make labels binary
             y = [
                 torch.Tensor([0 if y_ == "O" else 1 for y_ in sentence_tags])
                 for sentence_tags in y
             ]
+            y = rnn.pad_sequence(y, batch_first=True, padding_value=0.0)
 
         return X, y, sentences_lengths
 
