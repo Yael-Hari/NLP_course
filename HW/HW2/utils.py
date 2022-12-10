@@ -1,4 +1,4 @@
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -44,37 +44,26 @@ def print_batch_details(
 
 
 def print_epoch_details(
-    num_epochs,
-    epoch,
-    train_confusion_matrix,
-    loss_batches_list,
-    val_confusion_matrix,
+    epoch_dict,
+    epoch_num,
     loader_type,
 ):
-    loss_batches = np.array(loss_batches_list)
-    num_of_batches = len(loss_batches)
-    train_accuracy, train_f1 = get_f1_accuracy_by_confusion_matrix(
-        train_confusion_matrix
-    )
-    if loader_type == "train":
-        print(
-            "Epoch: {}/{} |".format(epoch + 1, num_epochs),
-            "Train Avg Loss: {:.3f} |".format(loss_batches.mean()),
-            "Train Accuracy: {:.3f} |".format(train_accuracy),
-            "Train F1: {:.3f}".format(train_f1),
-        )
-    if loader_type == "validate":
-        val_accuracy, val_f1 = get_f1_accuracy_by_confusion_matrix(val_confusion_matrix)
-        print(
-            "Val Accuracy: {:.3f} |".format(val_accuracy),
-            "Val F1: {:.3f}".format(val_f1),
-        )
+    confusion_matrix = epoch_dict[loader_type]["confusion_matrix"]
+    loss_list = epoch_dict[loader_type]["loss_list"]
+    avg_loss = np.array(loss_list).mean()
+    total_epochs_num = epoch_dict["total_epochs"]
 
-    # plt.plot(np.arange(num_of_batches), loss_batches)
-    # plt.title(f"Loss of epoch {epoch} by batch num")
-    # plt.xlabel("Batch Num")
-    # plt.ylabel("Loss")
-    # plt.show()
+    accuracy, f1 = get_f1_accuracy_by_confusion_matrix(confusion_matrix)
+    print(
+        "Epoch: {}/{} |".format(epoch_num + 1, total_epochs_num),
+        "{} Accuracy: {:.3f} |".format(loader_type, accuracy),
+        "{} F1: {:.3f}".format(loader_type, f1),
+    )
+
+    epoch_dict[loader_type]["accuracy_list"].append(accuracy)
+    epoch_dict[loader_type]["f1_list"].append(f1)
+    epoch_dict[loader_type]["avg_loss_list"].append(avg_loss)
+    return epoch_dict
 
 
 def remove_padding(padded, lengths):
@@ -83,3 +72,51 @@ def remove_padding(padded, lengths):
         x_unpad = torch.Tensor(x[:len_x])
         unpadded.append(x_unpad)
     return torch.concat(unpadded)
+
+
+def plot_epochs_results(
+    epoch_dict,
+    lr,
+    hidden_size,
+    num_layers,
+    embedding_name,
+    activation_name,
+    class_weights,
+):
+    class_weights = [round(float(w), 2) for w in class_weights]
+    hyper_params_str = f"{lr=} | {hidden_size=} | {num_layers=} | {activation_name=}\
+        \n{embedding_name=} | {class_weights=}"
+
+    epochs_nums_list = np.arange(1, epoch_dict["total_epochs"] + 1)
+
+    loader_types = ["train", "validate"]
+    acc_colors = {"train": "steelblue", "validate": "darkorange"}
+    f1_colors = {"train": "seagreen", "validate": "crimson"}
+    loss_colors = {"train": "purple", "validate": "chocolate"}
+    for loader_type in loader_types:
+        acc_vals = epoch_dict[loader_type]["accuracy_list"]
+        f1_vals = epoch_dict[loader_type]["f1_list"]
+        avg_loss_vals = epoch_dict[loader_type]["avg_loss_list"]
+        plt.plot(
+            epochs_nums_list,
+            acc_vals,
+            label=f"{loader_type}_Accuracy",
+            color=acc_colors[loader_type],
+        )
+        plt.plot(
+            epochs_nums_list,
+            f1_vals,
+            label=f"{loader_type}_F1",
+            color=f1_colors[loader_type],
+        )
+        plt.plot(
+            epochs_nums_list,
+            avg_loss_vals,
+            label=f"{loader_type}_avg_loss",
+            color=loss_colors[loader_type],
+        )
+    plt.legend()
+    plt.title(hyper_params_str)
+    plt.ylabel("Score")
+    plt.xlabel("Epoch")
+    plt.show()

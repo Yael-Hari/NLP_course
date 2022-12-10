@@ -6,7 +6,7 @@ from torch.optim import Adam
 
 from preprocessing import SentencesEmbeddingDataset
 from train_loop_model3 import train_and_plot_LSTM
-from utils import remove_padding
+from utils import plot_epochs_results, remove_padding
 
 
 class LSTM_NER_NN(nn.Module):
@@ -58,21 +58,40 @@ class LSTM_NER_NN(nn.Module):
 # -------------------------
 # Putting it all together
 # -------------------------
+
+# fasttext-wiki-news-subwords-300
+# glove-twitter-100
+# glove-twitter-200
+# glove-twitter-25
+# glove-twitter-50
+# glove-wiki-gigaword-100
+# glove-wiki-gigaword-200
+# glove-wiki-gigaword-300
+# glove-wiki-gigaword-50
+# word2vec-google-news-300
+# word2vec-ruscorpora-300
+
+
 def main():
     batch_size = 32
+    embedding_name = "glove-wiki-gigaword-300"
     NER_dataset = SentencesEmbeddingDataset(
-        embedding_model_path="glove-twitter-200", vec_dim=200
+        embedding_model_path=embedding_name, vec_dim=300
     )
     train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     num_classes = 2
     num_epochs = 30
-    hidden_dim = 32
+    hidden_dim = 64
     embedding_dim = NER_dataset.vec_dim
     lr = 0.001
     # activation = nn.ReLU()
     # activation = nn.Sigmoid()
     activation = nn.Tanh()
+    activation_name = "Tanh"
+
+    class_weights = torch.tensor([0.25, 0.75])
+
     num_layers = 1
     model_save_path = (
         f"LSTM_model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}_lr_{lr}.pt"
@@ -88,15 +107,25 @@ def main():
     )
 
     optimizer = Adam(params=LSTM_model.parameters(), lr=lr)
-    loss_func = nn.CrossEntropyLoss(weight=torch.tensor([0.2, 0.8]))
+    loss_func = nn.CrossEntropyLoss(weight=class_weights)
 
-    train_and_plot_LSTM(
+    epoch_dict = train_and_plot_LSTM(
         LSTM_model=LSTM_model,
         train_loader=train_loader,
         num_epochs=num_epochs,
         val_loader=dev_loader,
         optimizer=optimizer,
         loss_func=loss_func,
+    )
+
+    plot_epochs_results(
+        epoch_dict=epoch_dict,
+        lr=lr,
+        hidden_size=hidden_dim,
+        num_layers=num_layers,
+        embedding_name=embedding_name,
+        activation_name=activation_name,
+        class_weights=list(class_weights),
     )
 
 
