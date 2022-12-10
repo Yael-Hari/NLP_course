@@ -100,5 +100,5 @@ def train_and_plot_LSTM(
                 loader_type,
             )
 
-    torch.save(LSTM_model.state_dict(), LSTM_model.model_save_path)
+    # torch.save(LSTM_model.state_dict(), LSTM_model.model_save_path)
     return epoch_dict

@@ -76,17 +76,13 @@ def remove_padding(padded, lengths):
 
 def plot_epochs_results(
     epoch_dict,
-    lr,
-    hidden_size,
-    num_layers,
+    hidden,
     embedding_name,
-    activation_name,
+    dropout,
+    loss_func_name,
     class_weights,
 ):
     class_weights = [round(float(w), 2) for w in class_weights]
-    hyper_params_str = f"{lr=} | {hidden_size=} | {num_layers=} | {activation_name=}\
-        \n{embedding_name=} | {class_weights=}"
-
     epochs_nums_list = np.arange(1, epoch_dict["total_epochs"] + 1)
 
     loader_types = ["train", "validate"]
@@ -97,6 +93,9 @@ def plot_epochs_results(
         acc_vals = epoch_dict[loader_type]["accuracy_list"]
         f1_vals = epoch_dict[loader_type]["f1_list"]
         avg_loss_vals = epoch_dict[loader_type]["avg_loss_list"]
+        if loader_type == "validate":
+            val_f1 = round(f1_vals[-1], 3)
+
         plt.plot(
             epochs_nums_list,
             acc_vals,
@@ -116,7 +115,14 @@ def plot_epochs_results(
             color=loss_colors[loader_type],
         )
     plt.legend()
-    plt.title(hyper_params_str)
+    plt.title(
+        f"{val_f1=} | {embedding_name}  {hidden=}\
+        \n{loss_func_name} | {dropout=} | w={class_weights}"
+    )
     plt.ylabel("Score")
     plt.xlabel("Epoch")
-    plt.show()
+    file_name = f"plots/{val_f1=}_{embedding_name}_{hidden=}_{loss_func_name}_\
+                drop={dropout}_w={class_weights}.png"
+    plt.savefig(file_name)
+    plt.clf()
+    plt.cla()
