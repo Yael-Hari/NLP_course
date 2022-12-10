@@ -39,6 +39,7 @@ class LSTM_NER_NN(nn.Module):
         )
         self.relu_activation = nn.Sigmoid()
         self.dropout = nn.Dropout(p=dropout)
+        self.max_pooling = nn.MaxPool1d(2, stride=2)
         self.model_save_path = model_save_path
         self.num_classes = num_classes
 
@@ -141,20 +142,26 @@ def main():
     # (nn.BCEWithLogitsLoss(pos_weight=class_weights), "BCELogit")
 
     embed_list = [
-        ("glove-twitter-200", 200),
+        # ('concated', 500)
+        # ("glove-twitter-200", 200),
         ("word2vec-google-news-300", 300),
-        ("glove-wiki-gigaword-300", 300)
+        # ("glove-wiki-gigaword-300", 300)
     ]
     hidden_list = [32, 64, 128, 256]
+    hidden_list = [64, 128, 256]
     dropout_list = [0, 0.2, 0.4, 0.5]
     w_list = [
+        torch.tensor([0.05, 0.95]),
         torch.tensor([0.1, 0.9]),
-        torch.tensor([0.2, 0.8]),
-        torch.tensor([0.4, 0.6]),
+        # torch.tensor([0.2, 0.8]),
+        # torch.tensor([0.4, 0.6]),
     ]
 
     for embedding_name, vec_dim in embed_list:
         NER_dataset = SentencesEmbeddingDataset(
+            # vec_dim=vec_dim,
+            # list_embedding_paths=['glove-twitter-200', 'word2vec-google-news-300'],
+            # list_vec_dims=[200, 300]
             embedding_model_path=embedding_name, vec_dim=vec_dim
         )
         for hidden_dim in hidden_list:

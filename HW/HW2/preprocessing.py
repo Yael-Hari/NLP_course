@@ -127,7 +127,7 @@ class SentencesEmbeddingDataset:
         self.test_path = "data/test.untagged"
 
         # !!!!!! DEBUG
-        # self.train_path = "data/debug.tagged"
+        self.train_path = "data/my_dataset"
         # self.dev_path = "data/debug.tagged"
 
         # self.unknown_word_vec = torch.rand(self.vec_dim, requires_grad=True)
