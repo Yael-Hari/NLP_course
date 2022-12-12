@@ -19,13 +19,13 @@ def train_and_plot_LSTM(
     # GPU
     # -------
     # First checking if GPU is available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if torch.cuda.is_available():
-        print("Training on GPU.")
-    else:
-        print("No GPU available, training on CPU.")
-    LSTM_model.to(device)
-
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # if torch.cuda.is_available():
+    #     print("Training on GPU.")
+    # else:
+    #     print("No GPU available, training on CPU.")
+    # device = torch.device("cpu")
+    # LSTM_model.to(device)
     # ----------------------------------
     # Epoch Loop
     # ----------------------------------
@@ -55,11 +55,11 @@ def train_and_plot_LSTM(
         for loader_type, data_loader in data_loaders.items():
             for batch_num, (sentences, labels, sen_lengths) in enumerate(data_loader):
                 # if training on gpu
-                sentences, labels, sen_lengths = (
-                    sentences.to(device),
-                    labels.to(device),
-                    sen_lengths.to(device),
-                )
+                # sentences, labels, sen_lengths = (
+                #     sentences.to(device),
+                #     labels.to(device),
+                #     sen_lengths.to(device),
+                # )
 
                 # forward
                 outputs = LSTM_model(sentences, sen_lengths)

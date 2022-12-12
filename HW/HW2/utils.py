@@ -130,16 +130,18 @@ def plot_epochs_results(
 
 def write_to_tagged_file(y_pred, predictions_path):
     empty_lines = ["\t", ""]
-    with open("data/test.untagged", "r") as untag:
-        with open(predictions_path, "w") as tag_preds:
+    print("tagging this file: data/dev_no_tag.untagged")
+    with open("data/dev_no_tag.untagged", "r", encoding="utf8") as untag:
+        with open(predictions_path, "w", encoding="utf8") as tag_preds:
             for y in y_pred:
                 if y == 0:
                     pred = "O"
                 else:
                     pred = "1"
-                line = ""
-                while line in empty_lines:
+                # line = ""
+                # while line in empty_lines:
+                line = untag.readline()[:-1]
+                if line in empty_lines:
+                    tag_preds.write("\n")
                     line = untag.readline()[:-1]
-                    if line in empty_lines:
-                        tag_preds.write("\n")
                 tag_preds.write(f"{line}\t{pred}\n")

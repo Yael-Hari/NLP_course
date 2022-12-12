@@ -127,9 +127,9 @@ class SentencesEmbeddingDataset:
         self.test_path = "data/test.untagged"
 
         # !!!!!! DEBUG
-        # self.train_path = "data/my_train.txt"
-        # self.dev_path = "data/my_valid.txt"
-        # self.dev_path = "data/train.tagged"
+        # self.train_path = "data/debug.tagged"
+        # self.dev_path = "data/debug.tagged"
+        self.test_path = "data/dev_no_tag.untagged"
 
         # self.unknown_word_vec = torch.rand(self.vec_dim, requires_grad=True)
 
@@ -283,9 +283,6 @@ class SentencesEmbeddingDataset:
         return X_to_return, y_to_return
 
 
-
-
-
 if __name__ == "__main__":
     ds = SentencesEmbeddingDataset()
-    train_loader, dev_loader = ds.get_data_loaders(batch_size=64)
+    train_loader, dev_loader, test_loader = ds.get_data_loaders(batch_size=64)
