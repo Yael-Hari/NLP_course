@@ -3,6 +3,7 @@ import torch.nn as nn
 
 from model3_comp import LSTM_NER_NN
 from predict_model3 import predict_LSTM
+from preprocessing import SentencesEmbeddingDataset
 from utils import write_to_tagged_file
 
 
@@ -20,7 +21,14 @@ def main():
     model_save_path = f"LSTM_model_stateDict_hidden_{hidden_dim}.pt"
 
     # test_loader
-    _, _, test_loader = torch.load(f"concated_ds_{batch_size}.pkl")
+    torch.manual_seed(42)
+    NER_dataset = SentencesEmbeddingDataset(
+        vec_dim=embedding_dim,
+        list_embedding_paths=["glove-twitter-200", "word2vec-google-news-300"],
+        list_vec_dims=[200, 300],
+        embedding_model_path="concated",
+    )
+    _, _, test_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     # LSTM model
     LSTM_model = LSTM_NER_NN(

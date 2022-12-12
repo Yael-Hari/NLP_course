@@ -148,7 +148,7 @@ def main():
             list_vec_dims=vec_dims_list,
             embedding_model_path=embedding_name,
         )
-        train_loader, dev_loader, dev_dataloader, test_dataloader = NER_dataset.get_data_loaders(batch_size=batch_size)
+        train_loader, dev_loader, _ = NER_dataset.get_data_loaders(batch_size=batch_size)
         # option 2: load
         # train_loader, dev_loader, _ = torch.load(
         #     f"concated_ds_{batch_size}.pkl"
