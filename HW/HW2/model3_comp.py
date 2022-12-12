@@ -32,10 +32,12 @@ class LSTM_NER_NN(nn.Module):
             bidirectional=True,
         )
         self.hidden2tag = nn.Sequential(
-            activation, nn.Linear(self.hidden_dim * 2, self.hidden_dim)
+            activation,
+            nn.Linear(self.hidden_dim * 2, self.hidden_dim)
         )
         self.hidden2tag_layer2 = nn.Sequential(
-            activation, nn.Linear(self.hidden_dim, num_classes)
+            # activation,
+            nn.Linear(self.hidden_dim, num_classes)
         )
         self.activation = nn.Sigmoid()
         self.dropout = nn.Dropout(p=dropout)
@@ -71,6 +73,8 @@ class LSTM_NER_NN(nn.Module):
 
 def run(
     NER_dataset,
+    train_loader,
+    dev_loader,
     embedding_name,
     vec_dim,
     hidden_dim,
@@ -79,7 +83,7 @@ def run(
     loss_func,
     loss_func_name,
 ):
-    batch_size = 32
+    batch_size = 128*2
     num_classes = 2
     num_epochs = 10
     lr = 0.001
@@ -88,7 +92,7 @@ def run(
 
     embedding_dim = NER_dataset.vec_dim
 
-    train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
+    # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     model_save_path = (
         f"LSTM_model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}_lr_{lr}.pt"
@@ -145,28 +149,34 @@ def main():
     # (nn.BCEWithLogitsLoss(pos_weight=class_weights), "BCELogit")
 
     embed_list = [
-        # ('concated', 500)
-        # ("glove-twitter-200", 200),
-        ("word2vec-google-news-300", 300),
-        # ("glove-wiki-gigaword-300", 300)
+        ('concated', ['glove-twitter-200', 'word2vec-google-news-300'], [200, 300], 500),
+        # ("glove-twitter-200", None, None, 200),
+        # ("word2vec-google-news-300", None, None, 300),
+        # ("glove-wiki-gigaword-300", None, None, 300)
     ]
-    hidden_list = [32, 64, 128, 256]
-    hidden_list = [64, 128, 256]
-    dropout_list = [0, 0.2, 0.4, 0.5]
+    # hidden_list = [32, 64, 128, 256]
+    hidden_list = [128]
+    # dropout_list = [0, 0.2, 0.4, 0.5]
+    # dropout_list = [0.2, 0.4, 0.5, 0.0]
+    dropout_list = [0.2]
     w_list = [
-        torch.tensor([0.05, 0.95]),
-        torch.tensor([0.1, 0.9]),
-        # torch.tensor([0.2, 0.8]),
+        torch.tensor([0.2, 0.8]),
+        # torch.tensor([0.15, 0.85]),
+        # torch.tensor([0.1, 0.9]),
         # torch.tensor([0.4, 0.6]),
     ]
 
-    for embedding_name, vec_dim in embed_list:
-        NER_dataset = SentencesEmbeddingDataset(
-            # vec_dim=vec_dim,
-            # list_embedding_paths=['glove-twitter-200', 'word2vec-google-news-300'],
-            # list_vec_dims=[200, 300]
-            embedding_model_path=embedding_name, vec_dim=vec_dim
-        )
+    for embedding_name, embedding_paths, vec_dims_list, vec_dim in embed_list:
+        torch.manual_seed(42)
+        # NER_dataset = SentencesEmbeddingDataset(
+        #     vec_dim=vec_dim,
+        #     list_embedding_paths=embedding_paths,
+        #     list_vec_dims=vec_dims_list,
+        #     embedding_model_path=embedding_name,
+        # )
+        # batch_size = 32
+        # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
+        train_loader, dev_loader, NER_dataset = torch.load('concated_ds.pkl')
         for hidden_dim in hidden_list:
             for dropout in dropout_list:
                 for class_weights in w_list:
@@ -182,7 +192,9 @@ def main():
                         )
                         run(
                             NER_dataset=NER_dataset,
-                            embedding_name=embedding_name,
+                            train_loader=train_loader,
+                            dev_loader=dev_loader,
+                            embedding_name=embedding_name+"2022-12-12",
                             vec_dim=vec_dim,
                             hidden_dim=hidden_dim,
                             dropout=dropout,

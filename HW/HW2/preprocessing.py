@@ -127,8 +127,9 @@ class SentencesEmbeddingDataset:
         self.test_path = "data/test.untagged"
 
         # !!!!!! DEBUG
-        self.train_path = "data/my_dataset"
-        # self.dev_path = "data/debug.tagged"
+        # self.train_path = "data/my_train.txt"
+        # self.dev_path = "data/my_valid.txt"
+        # self.dev_path = "data/train.tagged"
 
         # self.unknown_word_vec = torch.rand(self.vec_dim, requires_grad=True)
 
@@ -249,6 +250,10 @@ class SentencesEmbeddingDataset:
             if tagged:
                 y.append(y_curr_sentence)
 
+        # remove sentences with only "O" tag
+        if tagged:
+            X, y = self._remove_only_O_sentences(X, y)
+
         # pad X
         X = rnn.pad_sequence(X, batch_first=True, padding_value=0.0)
         if tagged:
@@ -260,6 +265,17 @@ class SentencesEmbeddingDataset:
             y = rnn.pad_sequence(y, batch_first=True, padding_value=0.0)
 
         return X, y, sentences_lengths
+
+    def _remove_only_O_sentences(self, X, y):
+        X_to_return = []
+        y_to_return = []
+        for sentence, tags in zip(X, y):
+            for tag in tags:
+                if tag != 'O':
+                    X_to_return.append(sentence)
+                    y_to_return.append(tags)
+                    break
+        return X_to_return, y_to_return
 
 
 if __name__ == "__main__":
