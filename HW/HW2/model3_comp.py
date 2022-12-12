@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch.optim import Adam
 
-from preprocessing import SentencesEmbeddingDataset
+# from preprocessing import SentencesEmbeddingDataset
 from train_loop_model3 import train_and_plot_LSTM
 from utils import plot_epochs_results, remove_padding
 
@@ -71,7 +71,6 @@ class LSTM_NER_NN(nn.Module):
 
 
 def run(
-    NER_dataset,
     train_loader,
     dev_loader,
     embedding_name,
@@ -81,21 +80,16 @@ def run(
     class_weights,
     loss_func,
     loss_func_name,
-    batch_size
+    batch_size,
 ):
     num_classes = 2
     num_epochs = 10
     lr = 0.001
     activation = nn.Tanh()
     num_layers = 1
-
     embedding_dim = vec_dim
 
-    # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
-
-    model_save_path = (
-        f"LSTM_model_stateDict_batchSize_{batch_size}_hidden_{hidden_dim}_lr_{lr}.pt"
-    )
+    model_save_path = f"LSTM_model_stateDict_hidden_{hidden_dim}.pt"
 
     LSTM_model = LSTM_NER_NN(
         embedding_dim=embedding_dim,
@@ -129,57 +123,39 @@ def run(
 
 
 def main():
-    # fasttext-wiki-news-subwords-300
-    # glove-twitter-100
-    # glove-twitter-200
-    # glove-twitter-25
-    # glove-twitter-50
-    # glove-wiki-gigaword-100
-    # glove-wiki-gigaword-200
-    # glove-wiki-gigaword-300
-    # glove-wiki-gigaword-50
-    # word2vec-google-news-300
-    # word2vec-ruscorpora-300
-
-    # ("glove-twitter-200", 200),
-    # ("glove-wiki-gigaword-300", 300),
-    # ("word2vec-google-news-300", 300),
-    # hidden_list = [64, 128, 256, 280]
-    # (nn.BCEWithLogitsLoss(pos_weight=class_weights), "BCELogit")
-
     embed_list = [
         (
             "concated",
             ["glove-twitter-200", "word2vec-google-news-300"],
             [200, 300],
             500,
-        ),
-        # ("glove-twitter-200", None, None, 200),
-        # ("word2vec-google-news-300", None, None, 300),
-        # ("glove-wiki-gigaword-300", None, None, 300)
+        )
     ]
-    # hidden_list = [32, 64, 128, 256]
     hidden_list = [128]
-    # dropout_list = [0, 0.2, 0.4, 0.5]
-    # dropout_list = [0.2, 0.4, 0.5, 0.0]
     dropout_list = [0.2]
     w_list = [
         torch.tensor([0.2, 0.8]),
-        # torch.tensor([0.15, 0.85]),
-        # torch.tensor([0.1, 0.9]),
-        # torch.tensor([0.4, 0.6]),
     ]
+    batch_size = 32
 
     for embedding_name, embedding_paths, vec_dims_list, vec_dim in embed_list:
+
+        # Ner_dataset
         torch.manual_seed(42)
+        # option 1: make
         # NER_dataset = SentencesEmbeddingDataset(
         #     vec_dim=vec_dim,
         #     list_embedding_paths=embedding_paths,
         #     list_vec_dims=vec_dims_list,
         #     embedding_model_path=embedding_name,
         # )
-        batch_size = 32
-        train_loader, dev_loader, test_dataloader = torch.load(f'concated_ds_{batch_size}.pkl')
+        # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
+        # option 2: load
+        train_loader, dev_loader, test_loader = torch.load(
+            f"concated_ds_{batch_size}.pkl"
+        )
+
+        # run
         for hidden_dim in hidden_list:
             for dropout in dropout_list:
                 for class_weights in w_list:
@@ -194,7 +170,6 @@ def main():
                                 \n{class_weights=} | {loss_func=}"
                         )
                         run(
-                            NER_dataset=None,
                             train_loader=train_loader,
                             dev_loader=dev_loader,
                             embedding_name=embedding_name + "2022-12-12",
@@ -204,7 +179,7 @@ def main():
                             class_weights=class_weights,
                             loss_func=loss_func,
                             loss_func_name=loss_func_name,
-                            batch_size=batch_size
+                            batch_size=batch_size,
                         )
 
 

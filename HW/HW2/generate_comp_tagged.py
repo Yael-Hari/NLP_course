@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from model3_comp import LSTM_NER_NN
 from predict_model3 import predict_LSTM
-from preprocessing import SentencesEmbeddingDataset
+from utils import write_to_tagged_file
 
 
 def main():
@@ -15,11 +15,12 @@ def main():
     num_epochs = 10
     activation = nn.Tanh()
     num_layers = 1
-    batch_size = 64
+    batch_size = 32
     predictions_path = "data/comp_206014482_316375872.tagged"
+    model_save_path = f"LSTM_model_stateDict_hidden_{hidden_dim}.pt"
 
     # test_loader
-    # TODO
+    _, _, test_loader = torch.load(f"concated_ds_{batch_size}.pkl")
 
     # LSTM model
     LSTM_model = LSTM_NER_NN(
@@ -32,6 +33,8 @@ def main():
         dropout=dropout,
     )
 
+    LSTM_model.load_state_dict(torch.load(model_save_path))
+
     # predict
     y_pred = predict_LSTM(
         LSTM_model=LSTM_model,
@@ -40,17 +43,7 @@ def main():
     )
 
     # save tagged file
-    # TODO
-    output_file = open(predictions_path, "a+")
-    for i in range(y_pred):
-        if y_pred == 1:
-            pred = "1"
-        elif y_pred == 0:
-            pred = "O"
-        output_file.write(f"{words[i]}\t{pred}")
-        output_file.write("\n")
-    output_file.close()
-    
+    write_to_tagged_file(y_pred, predictions_path)
 
 
 if __name__ == "__main__":
