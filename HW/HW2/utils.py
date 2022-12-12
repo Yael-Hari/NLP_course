@@ -126,3 +126,17 @@ def plot_epochs_results(
     plt.savefig(file_name)
     plt.clf()
     plt.cla()
+
+
+def write_to_tagged_file(y_pred, predictions_path):
+    empty_lines = ["\t", ""]
+    with open("data/test.untagged", "r") as untag:
+        with open(predictions_path, "w") as tag_preds:
+            for y in y_pred:
+                line = ""
+                while line in empty_lines:
+                    line = untag.readline()
+                    if line in empty_lines:
+                        tag_preds.write("\n")
+                    line = untag.readline()
+                tag_preds.write(f"{line}\t{y}\n")

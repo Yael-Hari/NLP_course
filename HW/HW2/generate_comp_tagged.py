@@ -1,13 +1,12 @@
+import torch
 import torch.nn as nn
 
 from model3_comp import LSTM_NER_NN
-from train_loop_model3 import predict_LSTM
+from predict_model3 import predict_LSTM
+from preprocessing import SentencesEmbeddingDataset
 
 
 def main():
-    # test_loader
-    # TODO
-
     # predict
     embedding_dim = 500
     hidden_dim = 128
@@ -16,7 +15,13 @@ def main():
     num_epochs = 10
     activation = nn.Tanh()
     num_layers = 1
+    batch_size = 64
+    predictions_path = "data/comp_206014482_316375872.tagged"
 
+    # test_loader
+    # TODO
+
+    # LSTM model
     LSTM_model = LSTM_NER_NN(
         embedding_dim=embedding_dim,
         num_classes=num_classes,
@@ -27,6 +32,7 @@ def main():
         dropout=dropout,
     )
 
+    # predict
     y_pred = predict_LSTM(
         LSTM_model=LSTM_model,
         test_loader=test_loader,
@@ -35,6 +41,16 @@ def main():
 
     # save tagged file
     # TODO
+    output_file = open(predictions_path, "a+")
+    for i in range(y_pred):
+        if y_pred == 1:
+            pred = "1"
+        elif y_pred == 0:
+            pred = "O"
+        output_file.write(f"{words[i]}\t{pred}")
+        output_file.write("\n")
+    output_file.close()
+    
 
 
 if __name__ == "__main__":

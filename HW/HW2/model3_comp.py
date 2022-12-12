@@ -82,14 +82,14 @@ def run(
     loss_func,
     loss_func_name,
 ):
-    batch_size = 128 * 2
+    batch_size = 64
     num_classes = 2
     num_epochs = 10
     lr = 0.001
     activation = nn.Tanh()
     num_layers = 1
 
-    embedding_dim = NER_dataset.vec_dim
+    embedding_dim = vec_dim
 
     # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
@@ -178,7 +178,6 @@ def main():
         #     list_vec_dims=vec_dims_list,
         #     embedding_model_path=embedding_name,
         # )
-        # batch_size = 32
         # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
         train_loader, dev_loader, NER_dataset = torch.load("concated_ds.pkl")
         for hidden_dim in hidden_list:
