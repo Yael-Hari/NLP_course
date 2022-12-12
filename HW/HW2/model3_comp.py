@@ -81,8 +81,8 @@ def run(
     class_weights,
     loss_func,
     loss_func_name,
+    batch_size
 ):
-    batch_size = 64
     num_classes = 2
     num_epochs = 10
     lr = 0.001
@@ -178,8 +178,8 @@ def main():
         #     list_vec_dims=vec_dims_list,
         #     embedding_model_path=embedding_name,
         # )
-        # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
-        train_loader, dev_loader, NER_dataset = torch.load("concated_ds.pkl")
+        batch_size = 32
+        train_loader, dev_loader, test_dataloader = torch.load(f'concated_ds_{batch_size}.pkl')
         for hidden_dim in hidden_list:
             for dropout in dropout_list:
                 for class_weights in w_list:
@@ -194,7 +194,7 @@ def main():
                                 \n{class_weights=} | {loss_func=}"
                         )
                         run(
-                            NER_dataset=NER_dataset,
+                            NER_dataset=None,
                             train_loader=train_loader,
                             dev_loader=dev_loader,
                             embedding_name=embedding_name + "2022-12-12",
@@ -204,6 +204,7 @@ def main():
                             class_weights=class_weights,
                             loss_func=loss_func,
                             loss_func_name=loss_func_name,
+                            batch_size=batch_size
                         )
 
 
