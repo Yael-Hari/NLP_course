@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch.optim import Adam
 
-# from preprocessing import SentencesEmbeddingDataset
+from preprocessing import SentencesEmbeddingDataset
 from train_loop_model3 import train_and_plot_LSTM
 from utils import plot_epochs_results, remove_padding
 
@@ -142,17 +142,17 @@ def main():
         # Ner_dataset
         torch.manual_seed(42)
         # option 1: make
-        # NER_dataset = SentencesEmbeddingDataset(
-        #     vec_dim=vec_dim,
-        #     list_embedding_paths=embedding_paths,
-        #     list_vec_dims=vec_dims_list,
-        #     embedding_model_path=embedding_name,
-        # )
-        # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
-        # option 2: load
-        train_loader, dev_loader, _ = torch.load(
-            f"concated_ds_{batch_size}.pkl"
+        NER_dataset = SentencesEmbeddingDataset(
+            vec_dim=vec_dim,
+            list_embedding_paths=embedding_paths,
+            list_vec_dims=vec_dims_list,
+            embedding_model_path=embedding_name,
         )
+        train_loader, dev_loader, dev_dataloader, test_dataloader = NER_dataset.get_data_loaders(batch_size=batch_size)
+        # option 2: load
+        # train_loader, dev_loader, _ = torch.load(
+        #     f"concated_ds_{batch_size}.pkl"
+        # )
 
         # run
         for hidden_dim in hidden_list:
