@@ -23,19 +23,18 @@ def predict_LSTM(
     # Epoch Loop
     # ----------------------------------
     for epoch_num in range(num_epochs):
-        for loader_type, data_loader in test_loader.items():
-            for batch_num, (sentences, sen_lengths) in enumerate(data_loader):
-                # if training on gpu
-                sentences, sen_lengths = (
-                    sentences.to(device),
-                    sen_lengths.to(device),
-                )
+        for batch_num, (sentences, sen_lengths) in enumerate(test_loader):
+            # if training on gpu
+            sentences, sen_lengths = (
+                sentences.to(device),
+                sen_lengths.to(device),
+            )
 
-                # forward
-                outputs = LSTM_model(sentences, sen_lengths)
+            # forward
+            outputs = LSTM_model(sentences, sen_lengths)
 
-                # predictions
-                preds = outputs.argmax(dim=1).clone().detach().cpu()
-                y_pred = np.array(preds.view(-1))
+            # predictions
+            preds = outputs.argmax(dim=1).clone().detach().cpu()
+            y_pred = np.array(preds.view(-1))
 
     return y_pred

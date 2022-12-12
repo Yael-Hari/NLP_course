@@ -11,14 +11,8 @@ from utils import plot_epochs_results, remove_padding
 
 class LSTM_NER_NN(nn.Module):
     def __init__(
-        self,
-        embedding_dim,
-        hidden_dim,
-        num_classes,
-        model_save_path,
-        activation,
-        num_layers,
-        dropout,
+        self, embedding_dim, hidden_dim, num_classes,
+        model_save_path, activation, num_layers, dropout,
     ):
         super().__init__()
         self.embedding_dim = embedding_dim

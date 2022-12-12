@@ -133,10 +133,13 @@ def write_to_tagged_file(y_pred, predictions_path):
     with open("data/test.untagged", "r") as untag:
         with open(predictions_path, "w") as tag_preds:
             for y in y_pred:
+                if y == 0:
+                    pred = "O"
+                else:
+                    pred = "1"
                 line = ""
                 while line in empty_lines:
-                    line = untag.readline()
+                    line = untag.readline()[:-1]
                     if line in empty_lines:
                         tag_preds.write("\n")
-                    line = untag.readline()
-                tag_preds.write(f"{line}\t{y}\n")
+                tag_preds.write(f"{line}\t{pred}\n")
