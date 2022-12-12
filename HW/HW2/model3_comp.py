@@ -32,8 +32,7 @@ class LSTM_NER_NN(nn.Module):
             bidirectional=True,
         )
         self.hidden2tag = nn.Sequential(
-            activation,
-            nn.Linear(self.hidden_dim * 2, self.hidden_dim)
+            activation, nn.Linear(self.hidden_dim * 2, self.hidden_dim)
         )
         self.hidden2tag_layer2 = nn.Sequential(
             # activation,
@@ -83,7 +82,7 @@ def run(
     loss_func,
     loss_func_name,
 ):
-    batch_size = 128*2
+    batch_size = 128 * 2
     num_classes = 2
     num_epochs = 10
     lr = 0.001
@@ -149,7 +148,12 @@ def main():
     # (nn.BCEWithLogitsLoss(pos_weight=class_weights), "BCELogit")
 
     embed_list = [
-        ('concated', ['glove-twitter-200', 'word2vec-google-news-300'], [200, 300], 500),
+        (
+            "concated",
+            ["glove-twitter-200", "word2vec-google-news-300"],
+            [200, 300],
+            500,
+        ),
         # ("glove-twitter-200", None, None, 200),
         # ("word2vec-google-news-300", None, None, 300),
         # ("glove-wiki-gigaword-300", None, None, 300)
@@ -176,7 +180,7 @@ def main():
         # )
         # batch_size = 32
         # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
-        train_loader, dev_loader, NER_dataset = torch.load('concated_ds.pkl')
+        train_loader, dev_loader, NER_dataset = torch.load("concated_ds.pkl")
         for hidden_dim in hidden_list:
             for dropout in dropout_list:
                 for class_weights in w_list:
@@ -194,7 +198,7 @@ def main():
                             NER_dataset=NER_dataset,
                             train_loader=train_loader,
                             dev_loader=dev_loader,
-                            embedding_name=embedding_name+"2022-12-12",
+                            embedding_name=embedding_name + "2022-12-12",
                             vec_dim=vec_dim,
                             hidden_dim=hidden_dim,
                             dropout=dropout,
