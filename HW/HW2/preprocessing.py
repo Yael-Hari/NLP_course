@@ -156,11 +156,14 @@ class SentencesEmbeddingDataset:
 
         return train_dataloader, dev_dataloader
 
-    def get_X_test(self):
+    def get_test_loader(self, batch_size):
         X_test, _, sentences_lengths_test = self._get_dataset_from_path(
             self.test_path, tagged=False
         )
-        return X_test, sentences_lengths_test
+        test_dataset = [*zip(X_test, sentences_lengths_test)]
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+
+        return test_dataloader
 
     def get_datasets(self):
         X_train, y_train, sentences_lengths_train = self._get_dataset_from_path(
