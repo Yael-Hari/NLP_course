@@ -171,7 +171,7 @@ def main():
                         run(
                             train_loader=train_loader,
                             dev_loader=dev_loader,
-                            embedding_name=embedding_name + "2022-12-12",
+                            embedding_name=embedding_name,
                             vec_dim=vec_dim,
                             hidden_dim=hidden_dim,
                             dropout=dropout,
