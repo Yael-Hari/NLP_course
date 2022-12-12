@@ -37,7 +37,7 @@ class LSTM_NER_NN(nn.Module):
         self.hidden2tag_layer2 = nn.Sequential(
             activation, nn.Linear(self.hidden_dim, num_classes)
         )
-        self.relu_activation = nn.Sigmoid()
+        self.activation = nn.Sigmoid()
         self.dropout = nn.Dropout(p=dropout)
         self.model_save_path = model_save_path
         self.num_classes = num_classes
@@ -56,7 +56,7 @@ class LSTM_NER_NN(nn.Module):
         words_lstm_out_unpadded = remove_padding(lstm_out_padded, out_lengths)
         # hidden -> tag score -> prediction -> loss
         tag_space = self.hidden2tag(words_lstm_out_unpadded)
-        tag_space = self.relu_activation(tag_space)
+        tag_space = self.activation(tag_space)
         tag_space = self.dropout(tag_space)
         tag_space = self.hidden2tag_layer2(tag_space)
         tag_score = F.softmax(tag_space, dim=1)
