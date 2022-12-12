@@ -27,7 +27,7 @@ def main():
         embedding_dim=embedding_dim,
         num_classes=num_classes,
         hidden_dim=hidden_dim,
-        model_save_path="",
+        model_save_path="test.pt",
         activation=activation,
         num_layers=num_layers,
         dropout=dropout,

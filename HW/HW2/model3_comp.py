@@ -40,7 +40,6 @@ class LSTM_NER_NN(nn.Module):
         )
         self.activation = nn.Sigmoid()
         self.dropout = nn.Dropout(p=dropout)
-        self.max_pooling = nn.MaxPool1d(2, stride=2)
         self.model_save_path = model_save_path
         self.num_classes = num_classes
 
@@ -151,7 +150,7 @@ def main():
         # )
         # train_loader, dev_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
         # option 2: load
-        train_loader, dev_loader, test_loader = torch.load(
+        train_loader, dev_loader, _ = torch.load(
             f"concated_ds_{batch_size}.pkl"
         )
 
