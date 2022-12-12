@@ -179,7 +179,7 @@ def main():
         #     list_vec_dims=vec_dims_list,
         #     embedding_model_path=embedding_name,
         # )
-        batch_size = 16
+        batch_size = 32
         train_loader, dev_loader, test_dataloader = torch.load(f'concated_ds_{batch_size}.pkl')
         for hidden_dim in hidden_list:
             for dropout in dropout_list:
