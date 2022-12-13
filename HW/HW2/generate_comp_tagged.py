@@ -11,8 +11,11 @@ def main():
     # predict
     hidden_dim = 128
     batch_size = 32
+    num_layers = 1
+    w_list = [0.2, 0.8]
+    O_str = "withO"  # or "noO"
     predictions_path = "data/dev_evaluation.tagged"
-    model_save_path = f"LSTM_model_stateDict_hidden_{hidden_dim}.pt"
+    model_save_path = f"LSTM_model_stateDict_hidden={hidden_dim}_layers={num_layers}_w={w_list}_{O_str}.pt"
 
     file_path_no_tag = "data/dev_no_tag.untagged"
 
@@ -37,7 +40,9 @@ def main():
     # _, _, test_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     # option 2: load
-    train_loader, dev_loader, test_loader = torch.load(f"concated_ds_{batch_size}_withO.pkl")
+    train_loader, dev_loader, test_loader = torch.load(
+        f"concated_ds_{batch_size}_withO.pkl"
+    )
 
     # LSTM model
     LSTM_model = LSTM_NER_NN(
