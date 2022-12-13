@@ -127,9 +127,9 @@ class SentencesEmbeddingDataset:
         self.test_path = "data/test.untagged"
 
         # !!!!!! DEBUG
-        # self.train_path = "data/debug.tagged"
-        # self.dev_path = "data/debug.tagged"
-        self.test_path = "data/dev_no_tag.untagged"
+        self.train_path = "data/debug.tagged"
+        self.dev_path = "data/debug.tagged"
+        # self.test_path = "data/dev_no_tag.untagged"
 
         # self.unknown_word_vec = torch.rand(self.vec_dim, requires_grad=True)
 
@@ -152,7 +152,7 @@ class SentencesEmbeddingDataset:
         train_dataloader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True
         )
-        dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=True)
+        dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=False)
 
         test_dataloader = self.get_test_loader(batch_size=batch_size)
 
@@ -163,7 +163,7 @@ class SentencesEmbeddingDataset:
             self.test_path, tagged=False
         )
         test_dataset = [*zip(X_test, sentences_lengths_test)]
-        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
         return test_dataloader
 
@@ -256,7 +256,7 @@ class SentencesEmbeddingDataset:
                 y.append(y_curr_sentence)
 
         # remove sentences with only "O" tag
-        if tagged:
+        if tagged and "train" in path:
             X, y = self._remove_only_O_sentences(X, y)
 
         # pad X
