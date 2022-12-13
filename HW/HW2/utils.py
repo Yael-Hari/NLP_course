@@ -130,6 +130,24 @@ def plot_epochs_results(
 
 def write_to_tagged_file(y_pred, predictions_path):
     empty_lines = ["\t", ""]
+    panctuation = [
+        ".",
+        ",",
+        ":",
+        ";",
+        "?",
+        "!",
+        "*",
+        '"',
+        "#",
+        "$",
+        "'",
+        "-",
+        "+",
+        "_",
+        "(",
+        ")",
+    ]
     print("tagging this file: data/dev_no_tag.untagged")
     with open("data/dev_no_tag.untagged", "r", encoding="utf8") as untag:
         with open(predictions_path, "w", encoding="utf8") as tag_preds:
@@ -138,10 +156,10 @@ def write_to_tagged_file(y_pred, predictions_path):
                     pred = "O"
                 else:
                     pred = "1"
-                # line = ""
-                # while line in empty_lines:
-                line = untag.readline()[:-1]
-                if line in empty_lines:
+                word = untag.readline()[:-1]
+                if word in empty_lines:
                     tag_preds.write("\n")
-                    line = untag.readline()[:-1]
-                tag_preds.write(f"{line}\t{pred}\n")
+                    word = untag.readline()[:-1]
+                if word in panctuation:
+                    pred = "O"
+                tag_preds.write(f"{word}\t{pred}\n")
