@@ -82,6 +82,8 @@ def plot_epochs_results(
     dropout,
     loss_func_name,
     class_weights,
+    num_layers,
+    O_str
 ):
     class_weights = [round(float(w), 2) for w in class_weights]
     epochs_nums_list = np.arange(1, epoch_dict["total_epochs"] + 1)
@@ -123,7 +125,8 @@ def plot_epochs_results(
     plt.ylabel("Score")
     plt.xlabel("Epoch")
     file_name = f"plots/{val_f1=}_{embedding_name}_{hidden=}_{loss_func_name}_\
-                drop={dropout}_w={class_weights}.png"
+                drop={dropout}_w={class_weights}_{num_layers=}_{O_str=}.png"
+
     plt.savefig(file_name)
     plt.clf()
     plt.cla()
