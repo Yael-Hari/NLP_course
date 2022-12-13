@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from sklearn.metrics import f1_score
 
 
 def get_f1_accuracy_by_confusion_matrix(confusion_matrix):
@@ -128,7 +129,7 @@ def plot_epochs_results(
     plt.cla()
 
 
-def write_to_tagged_file(y_pred, predictions_path):
+def write_to_tagged_file(y_pred, predictions_path, file_path_no_tag):
     empty_lines = ["\t", ""]
     panctuation = [
         ".",
@@ -141,15 +142,14 @@ def write_to_tagged_file(y_pred, predictions_path):
         '"',
         "#",
         "$",
-        "'",
         "-",
         "+",
         "_",
         "(",
         ")",
     ]
-    print("tagging this file: data/dev_no_tag.untagged")
-    with open("data/dev_no_tag.untagged", "r", encoding="utf8") as untag:
+    print(f"tagging this file: {file_path_no_tag}")
+    with open(file_path_no_tag, "r", encoding="utf8") as untag:
         with open(predictions_path, "w", encoding="utf8") as tag_preds:
             for y in y_pred:
                 if y == 0:
@@ -160,6 +160,40 @@ def write_to_tagged_file(y_pred, predictions_path):
                 if word in empty_lines:
                     tag_preds.write("\n")
                     word = untag.readline()[:-1]
-                if word in panctuation:
-                    pred = "O"
+                # if word in panctuation:
+                #     pred = "O"
                 tag_preds.write(f"{word}\t{pred}\n")
+
+
+def calc_f1(tagged_file, tagged_real):
+    list_pred = []
+    with open(tagged_file, "r", encoding="utf8") as f:
+        for line in f.readlines():
+            line = line.split("\t")
+            try:
+                list_pred.append(line[1][:-1])
+            except:
+                continue
+
+    list_real = []
+    with open(tagged_real, "r", encoding="utf8") as f:
+        for line in f.readlines():
+            line = line.split("\t")
+            try:
+                list_real.append(line[1][:-1])
+            except:
+                continue
+
+    list_real = [0 if x == "O" else 1 for x in list_real]
+    list_pred = [0 if x == "O" else 1 for x in list_pred]
+
+    num_classes = 2
+    confusion_matrix = np.zeros([num_classes, num_classes])
+
+    for i in range(len(list_real)):
+        confusion_matrix[list_real[i]][list_pred[i]] += 1
+
+    print(confusion_matrix)
+    accuracy, f1 = get_f1_accuracy_by_confusion_matrix(confusion_matrix)
+    print(f"keren func, {f1=}, {accuracy=}")
+    print(f1_score(list_real, list_pred))
