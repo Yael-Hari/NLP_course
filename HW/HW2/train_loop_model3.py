@@ -101,4 +101,5 @@ def train_and_plot_LSTM(
             )
 
     torch.save(LSTM_model.state_dict(), LSTM_model.model_save_path)
+    print("validate confusion matrix:", epoch_dict["validate"]["confusion_matrix"])
     return epoch_dict
