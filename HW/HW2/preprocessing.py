@@ -294,5 +294,6 @@ class SentencesEmbeddingDataset:
 
 
 if __name__ == "__main__":
-    ds = SentencesEmbeddingDataset()
-    train_loader, dev_loader, test_loader = ds.get_data_loaders(batch_size=64)
+    pass
+    # ds = SentencesEmbeddingDataset()
+    # train_loader, dev_loader, test_loader = ds.get_data_loaders(batch_size=64)

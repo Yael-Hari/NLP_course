@@ -116,16 +116,16 @@ def run(
         loss_func=loss_func,
     )
 
-    plot_epochs_results(
-        epoch_dict=epoch_dict,
-        hidden=hidden_dim,
-        embedding_name=embedding_name,
-        dropout=dropout,
-        loss_func_name=loss_func_name,
-        class_weights=list(class_weights),
-        num_layers=num_layers,
-        O_str=O_str,
-    )
+#    plot_epochs_results(
+#        epoch_dict=epoch_dict,
+#        hidden=hidden_dim,
+#        embedding_name=embedding_name,
+#        dropout=dropout,
+#        loss_func_name=loss_func_name,
+#        class_weights=list(class_weights),
+#        num_layers=num_layers,
+#        O_str=O_str,
+#    )
 
 
 def main():
@@ -137,15 +137,19 @@ def main():
             500,
         )
     ]
-    hidden_list = [128, 256, 500, 600, 800, 1000]
+    hidden_list = [256, 600, 1000]
+    hidden_list = [500]
     dropout_list = [0.2]
     w_list = [
         torch.tensor([0.1, 0.9]),
-        torch.tensor([0.2, 0.8]),
+        # torch.tensor([0.2, 0.8]),
     ]
     batch_size = 32
     O_str_list = ["withO", "noO"]
+    O_str_list = ["withO"]
+
     num_layers_list = [1, 3, 4]
+    num_layers_list = [1]
 
     for O_str in O_str_list:
         for embedding_name, embedding_paths, vec_dims_list, vec_dim in embed_list:
