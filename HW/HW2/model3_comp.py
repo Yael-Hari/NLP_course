@@ -38,26 +38,15 @@ class LSTM_NER_NN(nn.Module):
         self.num_classes = num_classes
 
     def forward(self, sentences_embeddings, sen_lengths):
-        # sort batch by sentences len desc
-        sen_lengths_sorted, perm_index = sen_lengths.sort(0, descending=True)
-        sentences_embeddings = sentences_embeddings[perm_index]
-
-        # prepare for unsorting later
-        dict_index = {perm: i for i, perm in enumerate(perm_index)}
-        unsorted_index = torch.Tensor([x[1] for x in sorted(dict_index.items(), key=lambda x: x[0])]).long()
-
         # pack
         packed_input = pack_padded_sequence(
-            sentences_embeddings, sen_lengths_sorted, batch_first=True
+            sentences_embeddings, sen_lengths, batch_first=True, enforce_sorted=False
         )
         lstm_packed_output, (ht, ct) = self.lstm(input=packed_input)
         # unpack
         lstm_out_padded, out_lengths_sorted = pad_packed_sequence(
             lstm_packed_output, batch_first=True
         )
-
-        # unsort
-        lstm_out_padded = lstm_out_padded[unsorted_index]
 
         # reshape from sentences to words
         words_lstm_out_unpadded = remove_padding(lstm_out_padded, sen_lengths)
@@ -92,7 +81,7 @@ def run(
     num_epochs = 10
     lr = 0.001
     activation = nn.Tanh()
-    num_layers = 1
+    num_layers = 3
     embedding_dim = vec_dim
 
     model_save_path = f"LSTM_model_stateDict_hidden_{hidden_dim}.pt"
@@ -137,7 +126,7 @@ def main():
             500,
         )
     ]
-    hidden_list = [128]
+    hidden_list = [600]
     dropout_list = [0.2]
     w_list = [
         torch.tensor([0.2, 0.8]),
@@ -149,17 +138,17 @@ def main():
         # Ner_dataset
         torch.manual_seed(42)
         # option 1: make
-        NER_dataset = SentencesEmbeddingDataset(
-            vec_dim=vec_dim,
-            list_embedding_paths=embedding_paths,
-            list_vec_dims=vec_dims_list,
-            embedding_model_path=embedding_name,
-        )
-        train_loader, dev_loader, _ = NER_dataset.get_data_loaders(batch_size=batch_size)
-        # option 2: load
-        # train_loader, dev_loader, _ = torch.load(
-        #     f"concated_ds_{batch_size}.pkl"
+        # NER_dataset = SentencesEmbeddingDataset(
+        #     vec_dim=vec_dim,
+        #     list_embedding_paths=embedding_paths,
+        #     list_vec_dims=vec_dims_list,
+        #     embedding_model_path=embedding_name,
         # )
+        # train_loader, dev_loader, _ = NER_dataset.get_data_loaders(batch_size=batch_size)
+        # option 2: load
+        train_loader, dev_loader, _ = torch.load(
+            f"concated_ds_{batch_size}.pkl"
+        )
 
         # run
         for hidden_dim in hidden_list:
