@@ -4,7 +4,6 @@ import torch
 
 def predict_LSTM(
     LSTM_model,
-    num_epochs: int,
     test_loader=None,
 ):
 
@@ -24,7 +23,7 @@ def predict_LSTM(
     # ----------------------------------
     # for epoch_num in range(num_epochs):
     y_pred_all = []
-    for batch_num, (sentences, sen_lengths) in enumerate(test_loader):
+    for batch_num, (sentences, labels, sen_lengths) in enumerate(test_loader):
         # if training on gpu
         # sentences, sen_lengths = (
         #     sentences.to(device),
