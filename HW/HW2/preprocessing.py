@@ -104,6 +104,7 @@ class SentencesEmbeddingDataset:
 
     def __init__(
         self,
+        O_str,
         embedding_model_path="glove-twitter-200",
         learn_unknown=False,
         vec_dim=200,
@@ -114,6 +115,7 @@ class SentencesEmbeddingDataset:
         self.embedding_model_path = embedding_model_path
         self.list_embedding_paths = list_embedding_paths
         self.list_vec_dims = list_vec_dims
+        self.O_str = O_str
 
         print("preparing embedding...")
         if self.list_embedding_paths is None:
@@ -264,8 +266,8 @@ class SentencesEmbeddingDataset:
                 y.append(y_curr_sentence)
 
         # remove sentences with only "O" tag
-        # if tagged and "train" in path:
-        #     X, y = self._remove_only_O_sentences(X, y)
+        if tagged and "train" in path and self.O_str == "noO":
+            X, y = self._remove_only_O_sentences(X, y)
 
         # pad X
         X = rnn.pad_sequence(X, batch_first=True, padding_value=0.0)
