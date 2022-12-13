@@ -83,16 +83,17 @@ def run(
     loss_func_name,
     batch_size,
     O_str,
+    num_layers,
 ):
     num_classes = 2
     num_epochs = 10
     lr = 0.001
     activation = nn.Tanh()
-    num_layers = 3
     embedding_dim = vec_dim
     w_list = [round(float(w), 2) for w in class_weights]
 
-    model_save_path = f"LSTM_model_stateDict_hidden={hidden_dim}_layers={num_layers}_w={w_list}_{O_str}.pt"
+    model_save_path = f"LSTM_model_stateDict_hidden={hidden_dim}_\
+        layers={num_layers}_w={w_list}_{O_str}.pt"
 
     LSTM_model = LSTM_NER_NN(
         embedding_dim=embedding_dim,
@@ -122,6 +123,8 @@ def run(
         dropout=dropout,
         loss_func_name=loss_func_name,
         class_weights=list(class_weights),
+        num_layers=num_layers,
+        O_str=O_str,
     )
 
 
@@ -134,14 +137,15 @@ def main():
             500,
         )
     ]
-    hidden_list = [600]
+    hidden_list = [128, 256, 500, 600, 800, 1000]
     dropout_list = [0.2]
     w_list = [
-        torch.tensor([0.2, 0.8]),
+        torch.tensor([0.1, 0.9]),
         torch.tensor([0.2, 0.8]),
     ]
     batch_size = 32
     O_str_list = ["withO", "noO"]
+    num_layers_list = [1, 3, 4]
 
     for O_str in O_str_list:
         for embedding_name, embedding_paths, vec_dims_list, vec_dim in embed_list:
@@ -166,31 +170,36 @@ def main():
 
             # run
             for hidden_dim in hidden_list:
-                for dropout in dropout_list:
-                    for class_weights in w_list:
-                        for loss_func, loss_func_name in [
-                            (nn.CrossEntropyLoss(weight=class_weights), "CrossEntropy"),
-                        ]:
-                            print(
-                                "----------------------------------------------------------"
-                            )
-                            print(
-                                f"{embedding_name=} | {hidden_dim=} | {dropout=} \
-                                    \n{class_weights=} | {loss_func=}"
-                            )
-                            run(
-                                train_loader=train_loader,
-                                dev_loader=dev_loader,
-                                embedding_name=embedding_name,
-                                vec_dim=vec_dim,
-                                hidden_dim=hidden_dim,
-                                dropout=dropout,
-                                class_weights=class_weights,
-                                loss_func=loss_func,
-                                loss_func_name=loss_func_name,
-                                batch_size=batch_size,
-                                O_str=O_str,
-                            )
+                for num_layers in num_layers_list:
+                    for dropout in dropout_list:
+                        for class_weights in w_list:
+                            for loss_func, loss_func_name in [
+                                (
+                                    nn.CrossEntropyLoss(weight=class_weights),
+                                    "CrossEntropy",
+                                ),
+                            ]:
+                                print(
+                                    "----------------------------------------------------------"
+                                )
+                                print(
+                                    f"{embedding_name=} | {hidden_dim=} | {dropout=} \
+                                        \n{class_weights=} | {loss_func=}"
+                                )
+                                run(
+                                    train_loader=train_loader,
+                                    dev_loader=dev_loader,
+                                    embedding_name=embedding_name,
+                                    vec_dim=vec_dim,
+                                    hidden_dim=hidden_dim,
+                                    dropout=dropout,
+                                    class_weights=class_weights,
+                                    loss_func=loss_func,
+                                    loss_func_name=loss_func_name,
+                                    batch_size=batch_size,
+                                    O_str=O_str,
+                                    num_layers=num_layers,
+                                )
 
 
 if __name__ == "__main__":
