@@ -103,8 +103,12 @@ class SentencesEmbeddingDataset:
     """
 
     def __init__(
-        self, embedding_model_path="glove-twitter-200", learn_unknown=False, vec_dim=200,
-        list_embedding_paths=None, list_vec_dims=None
+        self,
+        embedding_model_path="glove-twitter-200",
+        learn_unknown=False,
+        vec_dim=200,
+        list_embedding_paths=None,
+        list_vec_dims=None,
     ):
         self.vec_dim = vec_dim
         self.embedding_model_path = embedding_model_path
@@ -117,7 +121,7 @@ class SentencesEmbeddingDataset:
         else:
             self.embedding_model = [
                 downloader.load(self.list_embedding_paths[0]),
-                downloader.load(self.list_embedding_paths[1])
+                downloader.load(self.list_embedding_paths[1]),
             ]
         self.learn_unknown = learn_unknown
 
@@ -127,8 +131,8 @@ class SentencesEmbeddingDataset:
         self.test_path = "data/test.untagged"
 
         # !!!!!! DEBUG
-        self.train_path = "data/debug.tagged"
-        self.dev_path = "data/debug.tagged"
+        # self.train_path = "data/debug.tagged"
+        # self.dev_path = "data/debug.tagged"
         # self.test_path = "data/dev_no_tag.untagged"
 
         # self.unknown_word_vec = torch.rand(self.vec_dim, requires_grad=True)
@@ -240,7 +244,11 @@ class SentencesEmbeddingDataset:
 
                         if word not in self.embedding_model[i].key_to_index:
                             if self.learn_unknown:
-                                word_vec.append(torch.rand(self.list_vec_dims[i], requires_grad=True))
+                                word_vec.append(
+                                    torch.rand(
+                                        self.list_vec_dims[i], requires_grad=True
+                                    )
+                                )
                             else:
                                 word_vec.append(torch.zeros(self.list_vec_dims[i]))
                         else:
@@ -256,8 +264,8 @@ class SentencesEmbeddingDataset:
                 y.append(y_curr_sentence)
 
         # remove sentences with only "O" tag
-        if tagged and "train" in path:
-            X, y = self._remove_only_O_sentences(X, y)
+        # if tagged and "train" in path:
+        #     X, y = self._remove_only_O_sentences(X, y)
 
         # pad X
         X = rnn.pad_sequence(X, batch_first=True, padding_value=0.0)
@@ -276,7 +284,7 @@ class SentencesEmbeddingDataset:
         y_to_return = []
         for sentence, tags in zip(X, y):
             for tag in tags:
-                if tag != 'O':
+                if tag != "O":
                     X_to_return.append(sentence)
                     y_to_return.append(tags)
                     break
