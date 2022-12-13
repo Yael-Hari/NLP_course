@@ -19,31 +19,15 @@ def main():
 
     file_path_no_tag = "data/test.untagged"
 
-    # test_loader
-    # torch.manual_seed(42)
-    # NER_dataset = SentencesEmbeddingDataset(
-    #     vec_dim=embedding_dim,
-    #     list_embedding_paths=["glove-twitter-200", "word2vec-google-news-300"],
-    #     list_vec_dims=[200, 300],
-    #     embedding_model_path="concated",
-    # )
-    # _, _, test_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
-
-    # DEBUG
     torch.manual_seed(42)
     NER_dataset = SentencesEmbeddingDataset(
         vec_dim=500,
         list_embedding_paths=["glove-twitter-200", "word2vec-google-news-300"],
         list_vec_dims=[200, 300],
         embedding_model_path="concated",
-        O_str=O_str
+        O_str=O_str,
     )
-    _, dev_loader, test_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
-
-    # option 2: load
-    # train_loader, dev_loader, test_loader = torch.load(
-    #     f"concated_ds_{batch_size}_withO.pkl"
-    # )
+    _, _, test_loader = NER_dataset.get_data_loaders(batch_size=batch_size)
 
     # LSTM model
     LSTM_model = LSTM_NER_NN(
