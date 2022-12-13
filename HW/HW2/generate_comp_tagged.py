@@ -65,7 +65,7 @@ def main():
     write_to_tagged_file(y_pred, predictions_path, file_path_no_tag)
 
     # for DEBUG
-    calc_f1(predictions_path, tagged_real="data/dev.tagged")
+    # calc_f1(predictions_path, tagged_real="data/dev.tagged")
 
 
 if __name__ == "__main__":
