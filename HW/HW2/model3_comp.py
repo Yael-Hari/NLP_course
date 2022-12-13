@@ -11,8 +11,14 @@ from utils import plot_epochs_results, remove_padding
 
 class LSTM_NER_NN(nn.Module):
     def __init__(
-        self, embedding_dim, hidden_dim, num_classes,
-        model_save_path, activation, num_layers, dropout,
+        self,
+        embedding_dim,
+        hidden_dim,
+        num_classes,
+        model_save_path,
+        activation,
+        num_layers,
+        dropout,
     ):
         super().__init__()
         self.embedding_dim = embedding_dim
@@ -76,6 +82,7 @@ def run(
     loss_func,
     loss_func_name,
     batch_size,
+    O_str,
 ):
     num_classes = 2
     num_epochs = 10
@@ -83,8 +90,9 @@ def run(
     activation = nn.Tanh()
     num_layers = 3
     embedding_dim = vec_dim
+    w_list = [round(float(w), 2) for w in class_weights]
 
-    model_save_path = f"LSTM_model_stateDict_hidden_{hidden_dim}.pt"
+    model_save_path = f"LSTM_model_stateDict_hidden={hidden_dim}_layers={num_layers}_w={w_list}_{O_str}.pt"
 
     LSTM_model = LSTM_NER_NN(
         embedding_dim=embedding_dim,
@@ -130,52 +138,59 @@ def main():
     dropout_list = [0.2]
     w_list = [
         torch.tensor([0.2, 0.8]),
+        torch.tensor([0.2, 0.8]),
     ]
     batch_size = 32
+    O_str_list = ["withO", "noO"]
 
-    for embedding_name, embedding_paths, vec_dims_list, vec_dim in embed_list:
+    for O_str in O_str_list:
+        for embedding_name, embedding_paths, vec_dims_list, vec_dim in embed_list:
 
-        # Ner_dataset
-        torch.manual_seed(42)
-        # option 1: make
-        # NER_dataset = SentencesEmbeddingDataset(
-        #     vec_dim=vec_dim,
-        #     list_embedding_paths=embedding_paths,
-        #     list_vec_dims=vec_dims_list,
-        #     embedding_model_path=embedding_name,
-        # )
-        # train_loader, dev_loader, _ = NER_dataset.get_data_loaders(batch_size=batch_size)
-        # option 2: load
-        train_loader, dev_loader, _ = torch.load(
-            f"concated_ds_{batch_size}.pkl"
-        )
+            # Ner_dataset
+            torch.manual_seed(42)
+            # option 1: make
+            NER_dataset = SentencesEmbeddingDataset(
+                vec_dim=vec_dim,
+                list_embedding_paths=embedding_paths,
+                list_vec_dims=vec_dims_list,
+                embedding_model_path=embedding_name,
+                O_str=O_str,
+            )
+            train_loader, dev_loader, _ = NER_dataset.get_data_loaders(
+                batch_size=batch_size
+            )
+            # option 2: load
+            # train_loader, dev_loader, _ = torch.load(
+            #     f"concated_ds_{batch_size}_{O_str}.pkl"
+            # )
 
-        # run
-        for hidden_dim in hidden_list:
-            for dropout in dropout_list:
-                for class_weights in w_list:
-                    for loss_func, loss_func_name in [
-                        (nn.CrossEntropyLoss(weight=class_weights), "CrossEntropy"),
-                    ]:
-                        print(
-                            "----------------------------------------------------------"
-                        )
-                        print(
-                            f"{embedding_name=} | {hidden_dim=} | {dropout=} \
-                                \n{class_weights=} | {loss_func=}"
-                        )
-                        run(
-                            train_loader=train_loader,
-                            dev_loader=dev_loader,
-                            embedding_name=embedding_name,
-                            vec_dim=vec_dim,
-                            hidden_dim=hidden_dim,
-                            dropout=dropout,
-                            class_weights=class_weights,
-                            loss_func=loss_func,
-                            loss_func_name=loss_func_name,
-                            batch_size=batch_size,
-                        )
+            # run
+            for hidden_dim in hidden_list:
+                for dropout in dropout_list:
+                    for class_weights in w_list:
+                        for loss_func, loss_func_name in [
+                            (nn.CrossEntropyLoss(weight=class_weights), "CrossEntropy"),
+                        ]:
+                            print(
+                                "----------------------------------------------------------"
+                            )
+                            print(
+                                f"{embedding_name=} | {hidden_dim=} | {dropout=} \
+                                    \n{class_weights=} | {loss_func=}"
+                            )
+                            run(
+                                train_loader=train_loader,
+                                dev_loader=dev_loader,
+                                embedding_name=embedding_name,
+                                vec_dim=vec_dim,
+                                hidden_dim=hidden_dim,
+                                dropout=dropout,
+                                class_weights=class_weights,
+                                loss_func=loss_func,
+                                loss_func_name=loss_func_name,
+                                batch_size=batch_size,
+                                O_str=O_str,
+                            )
 
 
 if __name__ == "__main__":
