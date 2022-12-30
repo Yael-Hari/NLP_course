@@ -103,12 +103,28 @@ class SentencesEmbeddingDataset:
     """
 
     def __init__(
-        self, embedding_model_path="glove-twitter-200", learn_unknown=False, vec_dim=200
+        self,
+        O_str,
+        embedding_model_path="glove-twitter-200",
+        learn_unknown=False,
+        vec_dim=200,
+        list_embedding_paths=None,
+        list_vec_dims=None,
     ):
         self.vec_dim = vec_dim
         self.embedding_model_path = embedding_model_path
+        self.list_embedding_paths = list_embedding_paths
+        self.list_vec_dims = list_vec_dims
+        self.O_str = O_str
+
         print("preparing embedding...")
-        self.embedding_model = downloader.load(self.embedding_model_path)
+        if self.list_embedding_paths is None:
+            self.embedding_model = downloader.load(self.embedding_model_path)
+        else:
+            self.embedding_model = [
+                downloader.load(self.list_embedding_paths[0]),
+                downloader.load(self.list_embedding_paths[1]),
+            ]
         self.learn_unknown = learn_unknown
 
         # paths to data
@@ -119,10 +135,9 @@ class SentencesEmbeddingDataset:
         # !!!!!! DEBUG
         # self.train_path = "data/debug.tagged"
         # self.dev_path = "data/debug.tagged"
+        # self.test_path = "data/dev_no_tag.untagged"
 
         # self.unknown_word_vec = torch.rand(self.vec_dim, requires_grad=True)
-        self.train_num_label_0 = 0
-        self.train_num_label_1 = 0
 
     def get_data_loaders(self, batch_size):
         (
@@ -143,37 +158,28 @@ class SentencesEmbeddingDataset:
         train_dataloader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True
         )
-        dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=True)
+        dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=False)
 
-        return train_dataloader, dev_dataloader
+        test_dataloader = self.get_test_loader(batch_size=batch_size)
 
-    def get_X_test(self):
+        return train_dataloader, dev_dataloader, test_dataloader
+
+    def get_test_loader(self, batch_size):
         X_test, _, sentences_lengths_test = self._get_dataset_from_path(
             self.test_path, tagged=False
         )
-        return X_test, sentences_lengths_test
+        test_dataset = [*zip(X_test, sentences_lengths_test)]
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+        return test_dataloader
 
     def get_datasets(self):
-        # train
         X_train, y_train, sentences_lengths_train = self._get_dataset_from_path(
             self.train_path, tagged=True
         )
-        # count how many of every tag in train:
-        self.train_num_label_1 = sum(y_train)
-        self.train_num_label_0 = len(y_train) - sum(y_train)
-
-        # pad
-        X_train = rnn.pad_sequence(X_train, batch_first=True, padding_value=0.0)
-        y_train = rnn.pad_sequence(y_train, batch_first=True, padding_value=0.0)
-
-        # dev
         X_dev, y_dev, sentences_lengths_dev = self._get_dataset_from_path(
             self.dev_path, tagged=True
         )
-        # pad
-        X_dev = rnn.pad_sequence(y_dev, batch_first=True, padding_value=0.0)
-        y_dev = rnn.pad_sequence(y_dev, batch_first=True, padding_value=0.0)
-
         return (
             X_train,
             y_train,
@@ -210,6 +216,7 @@ class SentencesEmbeddingDataset:
         y = []
         sentences_lengths = []
 
+        # embeddings
         for sentence in sentences:
 
             X_curr_sentence = []
@@ -220,13 +227,36 @@ class SentencesEmbeddingDataset:
                     word, tag = word
                     y_curr_sentence.append(tag)
                 word = word.lower()
-                if word not in self.embedding_model.key_to_index:
-                    if self.learn_unknown:
-                        word_vec = torch.rand(self.vec_dim, requires_grad=True)
+
+                # single embedding
+                if self.list_embedding_paths is None:
+                    if word not in self.embedding_model.key_to_index:
+                        if self.learn_unknown:
+                            word_vec = torch.rand(self.vec_dim, requires_grad=True)
+                        else:
+                            word_vec = torch.zeros(self.vec_dim)
                     else:
-                        word_vec = torch.zeros(self.vec_dim)
+                        word_vec = torch.tensor(self.embedding_model[word])
+
+                # concatenated embeddings
                 else:
-                    word_vec = torch.tensor(self.embedding_model[word])
+                    word_vec = []
+                    # embedding #0:
+                    for i in range(len(self.embedding_model)):
+
+                        if word not in self.embedding_model[i].key_to_index:
+                            if self.learn_unknown:
+                                word_vec.append(
+                                    torch.rand(
+                                        self.list_vec_dims[i], requires_grad=True
+                                    )
+                                )
+                            else:
+                                word_vec.append(torch.zeros(self.list_vec_dims[i]))
+                        else:
+                            word_vec.append(torch.tensor(self.embedding_model[i][word]))
+
+                    word_vec = torch.concat(word_vec)
                 X_curr_sentence.append(word_vec)
 
             X_curr_sentence = torch.stack(X_curr_sentence)
@@ -235,16 +265,35 @@ class SentencesEmbeddingDataset:
             if tagged:
                 y.append(y_curr_sentence)
 
+        # remove sentences with only "O" tag
+        if tagged and "train" in path and self.O_str == "noO":
+            X, y = self._remove_only_O_sentences(X, y)
+
+        # pad X
+        X = rnn.pad_sequence(X, batch_first=True, padding_value=0.0)
         if tagged:
             # make labels binary
             y = [
                 torch.Tensor([0 if y_ == "O" else 1 for y_ in sentence_tags])
                 for sentence_tags in y
             ]
+            y = rnn.pad_sequence(y, batch_first=True, padding_value=0.0)
 
         return X, y, sentences_lengths
 
+    def _remove_only_O_sentences(self, X, y):
+        X_to_return = []
+        y_to_return = []
+        for sentence, tags in zip(X, y):
+            for tag in tags:
+                if tag != "O":
+                    X_to_return.append(sentence)
+                    y_to_return.append(tags)
+                    break
+        return X_to_return, y_to_return
+
 
 if __name__ == "__main__":
-    ds = SentencesEmbeddingDataset()
-    train_loader, dev_loader = ds.get_data_loaders(batch_size=64)
+    pass
+    # ds = SentencesEmbeddingDataset()
+    # train_loader, dev_loader, test_loader = ds.get_data_loaders(batch_size=64)

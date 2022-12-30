@@ -1,0 +1,28 @@
+weeks	O
+.	O
+Empire	B-location
+State	I-location
+Building	I-location
+.	O
+Pretty	O
+bad	O
+storm	O
+
+Playboy	B-corporation
+-	O
+10	O
+October	O
+2010	O
+Slovenia	B-location
+:	O
+Playboy	B-corporation
+-	O
+
+my	O
+time	O
+now	O
+btwn	O
+SF	B-location
+and	O
+San	B-location
+Mateo	I-location
