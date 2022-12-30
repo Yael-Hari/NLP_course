@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 
 from model import DependencyParser
+from preprocess import SentencesEmbeddingDataset
 from train_predict_plot import predict
 
 
