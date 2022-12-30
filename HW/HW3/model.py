@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from train_and_plot import train_and_plot
 
 """ 
     ### Code Structure
@@ -11,10 +12,10 @@ import torch.nn.functional as F
         output: for each word - concat embddings of word and embedding of POS.
             * word embedding - glove + word2vec concatenated
             * POS embedding - ONE HOT / learnable
-    2. Run DependencyParser Model
-        forward
-        predict - Run chu_liu_edmonds to get Predicted Tree
-        evaluate - UAS & Loss pronts and plots
+    2. Train and Plot:
+        run - DependencyParser Model
+        predict - use chu_liu_edmonds algorithm to get predicted defendencies
+        evaluate - plot UAS & Loss by epoch
 """
 
 
@@ -23,6 +24,9 @@ class DependencyParser(nn.Module):
         super(DependencyParser, self).__init__()
         self.embedding_dim = embedding_dim # Implement embedding layer for words (can be new or pretrained - word2vec/glove)
         self.lstm_hidden_dim = lstm_hidden_dim
+        self.lstm_num_layers = lstm_num_layers
+        self.lstm_dropout = lstm_dropout
+        self.activation = activation
         
         self.lstm = # Implement BiLSTM module which is fed with word embeddings and outputs hidden representations
         self.mlp = # Implement a sub-module to calculate the scores for all possible edges in sentence dependency graph
@@ -85,10 +89,6 @@ class DependencyParser(nn.Module):
         # TODO: complete
         pass
 
-    def evaluate(self):
-        #TODO: complete
-        pass
-
 
 def main():
     ## Hyper parameters
@@ -121,7 +121,7 @@ def main():
         for pos_embedding_name in pos_embedding_name_list:
             # get embeddings
             if load_dataset_from_pkl:
-                train_loader, dev_loader, _ = torch.load(
+                train_loader, val_loader, _ = torch.load(
                     f"{word_embedding_name}_{pos_embedding_name}.pkl"
                 )
             else:
@@ -156,17 +156,13 @@ def main():
                             lstm_dropout=lstm_dropout,
                             activation=activation,
                         )
-                        epoch_dict = train_loop(
-                            model_save_path=model_save_path,
+                        train_and_plot(
                             dependency_model=dependency_model,
+                            model_save_path=model_save_path,
                             train_loader=train_loader,
-                            test_loader=test_loader,
+                            val_loader=val_loader,
                             num_epochs=num_epochs,
                             optimizer=optimizer,
-                        )
-
-                        plot_epochs_results(
-                            epoch_dict=epoch_dict,
                             hyper_params_title=hyper_params_title
                         )
 
