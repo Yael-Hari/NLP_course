@@ -13,52 +13,87 @@ from train_predict_plot import train_and_plot
         output: for each word - concat embddings of word and embedding of POS.
             * word embedding - glove + word2vec concatenated
             * POS embedding - ONE HOT / learnable
-    2. Train and Plot:
-        run - DependencyParser Model
-        predict - use chu_liu_edmonds algorithm to get predicted defendencies
-        evaluate - plot UAS & Loss by epoch
+    2. Run DependencyParser Model
+        forward
+        predict - Run chu_liu_edmonds to get Predicted Tree
+        evaluate - UAS & Loss pronts and plots
 """
 
 
 class DependencyParser(nn.Module):
-    def __init__(self, embedding_dim, lstm_hidden_dim, lstm_num_layers, lstm_dropout, activation):
+    def __init__(self,
+                 embedding_dim,
+                 lstm_hidden_dim,
+                 lstm_num_layers,
+                 fc_hidden_dim,
+                 lstm_dropout=0.25,
+                 activation=nn.Tanh()):
+
         super(DependencyParser, self).__init__()
-        self.embedding_dim = embedding_dim # Implement embedding layer for words (can be new or pretrained - word2vec/glove)
+
+        # ~~~~~~~~~ variables
+        self.hidden_dim = fc_hidden_dim
+        self.embedding_dim = embedding_dim  # embedding dim: word2vec/glove + POS
         self.lstm_hidden_dim = lstm_hidden_dim
-        self.lstm_num_layers = lstm_num_layers
-        self.lstm_dropout = lstm_dropout
+
+        # ~~~~~~~~~ layers
+        self.lstm = nn.LSTM(
+            input_size=embedding_dim,
+            hidden_size=self.hidden_dim,
+            num_layers=lstm_num_layers,
+            dropout=lstm_dropout,
+            bidirectional=True,
+        )
+        self.fc1 = nn.Linear(self.hidden_dim * 2, self.hidden_dim)
         self.activation = activation
-        
-        self.lstm = # Implement BiLSTM module which is fed with word embeddings and outputs hidden representations
-        self.mlp = # Implement a sub-module to calculate the scores for all possible edges in sentence dependency graph
+        self.fc2 = nn.Linear(self.hidden_dim, self.hidden_dim)
+        self.mlp = nn.Sequential(
+            self.fc1,
+            self.activation,
+        )
+
+        # ~~~~~~~~~ final funcs
+        self.softmax = nn.LogSoftmax(dim=0)   # dim=0 for cols, dim=1 for rows
+        self.loss_func = nn.NLLLoss()
 
     def forward(self, sentence):
         # input: Xi - sentence, Yi - true dependencies of this sentence
         # output: Scores Matrix
-        word_idx_tensor, pos_idx_tensor, true_tree_heads = sentence
+        sentence_embedded, true_dependencies = sentence
+        sentence_len = sentence_embedded.size(0)
+        sentence_embedded = torch.concat([sentence_embedded, self.root_vec])
+        lstm_output = self.prepare_lstm_output(input=sentence_embedded)    # (n+1) X h
+        concated_pairs = self.concat_pairs(lstm_output)    # -> ((n+1)^2 - (n+1)) X h
+        mlp_output = self.mlp(concated_pairs)   # -> ((n+1)^2 - (n+1)) X 1
+        # Get score for each possible edge in the parsing graph, construct score matrix
+        scores_matrix = self.reshape_to_scores_vec_to_scores_mat(mlp_output, sentence_len)  # -> (n+1) X n, with diag: torch.exp(torch.Tensor([float('-inf')]))
 
-        # Pass word_idx through their embedding layer
+        # Calculate the negative log likelihood loss
+        loss = self.loss_func(input=self.softmax(scores_matrix), target=true_dependencies)
 
-        # Get Bi-LSTM hidden representation for each word in sentence
-        # input: Xi - sentence, Yi - true dependencies of this sentence
-            # output: hidden vectors for each word from each layer - 2 directions
-        self.prepare_word_vectors()
-        self.get_scores(scores_matrix)
+        return loss, scores_matrix
 
-        # Get score for each possible edge in the parsing graph, construct score matrix     
-        
-        # Calculate the negative log likelihood loss described above
-      
-        return loss, score_mat
-
-    def prepare_word_vectors(self):
+    def prepare_lstm_output(self, input):
         """
         for each word concatenate hidden vectors
         """
-        # TODO: complete
-        pass
+        lstm_output, (hn, cn) = self.lstm(input=input)
+        # TODO: concat different
+        return lstm_output
 
-    def get_scores(self):
+    def concat_pairs(self, mat):
+        """ input of size: (n+1)Xh """
+        concated_vecs_list = []
+        for i in range(mat.size(0)):
+            for j in range(mat.size(0) - 1):   # not including the root vec
+                if i == j:
+                    continue
+                curr_vec = torch.concat([mat[i], mat[j]])
+                concated_vecs_list.append(curr_vec)
+        concated_vecs = torch.stack(concated_vecs_list)
+        return concated_vecs
+
+    def reshape_to_scores_vec_to_scores_mat(self, input, sentence_len):
         """
         a. Prepare Matrix for MLP (multi layer perceptron):
             shape: (n**2 - n, 2 * word_dim)
@@ -69,25 +104,35 @@ class DependencyParser(nn.Module):
             shape: (n, n)
             matrix[i][j] = score of (v_i, v_j)
         """
+        # with diag: torch.exp(torch.Tensor([float('-inf')]))
         # TODO: complete
-        pass
+        output_mat = torch.zeros(sentence_len, sentence_len)
+        running_index = 0
+        for i in range(sentence_len):
+            for j in range(sentence_len):
+                if i == j:
+                    output_mat[i, j] = float('-inf')
+                else:
+                    output_mat[i, j] = input[running_index]
+                    running_index += 1
+        return output_mat
 
-    def loss_function(self, scores_matrix):
-        """
-        1. Calculate Negative Log Likelihood Loss
-            a. Get Prob Matrix
-                do softmax for each column of Scores Matrix 
-                (assuming each column represants modifier word and each row represants head word)
-            b. loss = sum over all sentences (Xi, Yi):
-                sum over all couples of (head, modifier) in Yi (true dependencies):
-                    - log(Prob[head][modifier]) / |Yi|
-        """
-        # TODO: complete
-        pass
+    # def loss_function(self, scores_matrix):
+    #     """
+    #     1. Calculate Negative Log Likelihood Loss
+    #         a. Get Prob Matrix
+    #             do softmax for each column of Scores Matrix
+    #             (assuming each column represants modifier word and each row represants head word)
+    #         b. loss = sum over all sentences (Xi, Yi):
+    #             sum over all couples of (head, modifier) in Yi (true dependencies):
+    #                 - log(Prob[head][modifier]) / |Yi|
+    #     """
+    #     # TODO: complete
+    #     pass
 
 def main():
     ## Hyper parameters
-    
+
     words_embedding_list = [("glove-wiki-gigaword-200", None, None, 200)]
     # embed_list = [
     #     (
@@ -104,14 +149,14 @@ def main():
     lstm_hidden_dim_list = [250, 300]
     lstm_num_layers_list = [1, 2, 3]
     lstm_dropout_list = [0.25, 0.1, 0.3]
-    
+
     activation = nn.Tanh()
     optimizer = torch.optim.SGD(lr=0.1)
     num_epochs = 10
     torch.manual_seed(42)
 
     load_dataset_from_pkl = False
-    
+
     for word_embedding_name, list_embedding_paths, word_embedding_dim_list, word_embedding_dim in words_embedding_list:
         for pos_embedding_name in pos_embedding_name_list:
             # get embeddings
@@ -138,7 +183,7 @@ def main():
                         print(
                             "----------------------------------------------------------"
                         )
-                        
+
                         hyper_params_title = f"{word_embedding_name=} | {pos_embedding_name=} | hidden={lstm_hidden_dim} \
                                 \nnum_layers={lstm_num_layers} | dropout={lstm_dropout}"
                         print(hyper_params_title)
