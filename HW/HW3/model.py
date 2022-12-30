@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
+from preprocess import SentencesEmbeddingDataset
 from train_predict_plot import train_and_plot
 
-""" 
+"""
     ### Code Structure
 
     0. Prepare Hyper Parametrs
@@ -21,13 +21,15 @@ from train_predict_plot import train_and_plot
 
 
 class DependencyParser(nn.Module):
-    def __init__(self,
-                 embedding_dim,
-                 lstm_hidden_dim,
-                 lstm_num_layers,
-                 fc_hidden_dim,
-                 lstm_dropout=0.25,
-                 activation=nn.Tanh()):
+    def __init__(
+        self,
+        embedding_dim,
+        lstm_hidden_dim,
+        lstm_num_layers,
+        fc_hidden_dim,
+        lstm_dropout=0.25,
+        activation=nn.Tanh(),
+    ):
 
         super(DependencyParser, self).__init__()
 
@@ -53,7 +55,7 @@ class DependencyParser(nn.Module):
         )
 
         # ~~~~~~~~~ final funcs
-        self.softmax = nn.LogSoftmax(dim=0)   # dim=0 for cols, dim=1 for rows
+        self.softmax = nn.LogSoftmax(dim=0)  # dim=0 for cols, dim=1 for rows
         self.loss_func = nn.NLLLoss()
 
     def forward(self, sentence):
@@ -62,14 +64,18 @@ class DependencyParser(nn.Module):
         sentence_embedded, true_dependencies = sentence
         sentence_len = sentence_embedded.size(0)
         sentence_embedded = torch.concat([sentence_embedded, self.root_vec])
-        lstm_output = self.prepare_lstm_output(input=sentence_embedded)    # (n+1) X h
-        concated_pairs = self.concat_pairs(lstm_output)    # -> ((n+1)^2 - (n+1)) X h
-        mlp_output = self.mlp(concated_pairs)   # -> ((n+1)^2 - (n+1)) X 1
+        lstm_output = self.prepare_lstm_output(input=sentence_embedded)  # (n+1) X h
+        concated_pairs = self.concat_pairs(lstm_output)  # -> ((n+1)^2 - (n+1)) X h
+        mlp_output = self.mlp(concated_pairs)  # -> ((n+1)^2 - (n+1)) X 1
         # Get score for each possible edge in the parsing graph, construct score matrix
-        scores_matrix = self.reshape_to_scores_vec_to_scores_mat(mlp_output, sentence_len)  # -> (n+1) X n, with diag: torch.exp(torch.Tensor([float('-inf')]))
+        scores_matrix = self.reshape_to_scores_vec_to_scores_mat(
+            mlp_output, sentence_len
+        )  # -> (n+1) X n, with diag: torch.exp(torch.Tensor([float('-inf')]))
 
         # Calculate the negative log likelihood loss
-        loss = self.loss_func(input=self.softmax(scores_matrix), target=true_dependencies)
+        loss = self.loss_func(
+            input=self.softmax(scores_matrix), target=true_dependencies
+        )
 
         return loss, scores_matrix
 
@@ -82,10 +88,10 @@ class DependencyParser(nn.Module):
         return lstm_output
 
     def concat_pairs(self, mat):
-        """ input of size: (n+1)Xh """
+        """input of size: (n+1)Xh"""
         concated_vecs_list = []
         for i in range(mat.size(0)):
-            for j in range(mat.size(0) - 1):   # not including the root vec
+            for j in range(mat.size(0) - 1):  # not including the root vec
                 if i == j:
                     continue
                 curr_vec = torch.concat([mat[i], mat[j]])
@@ -111,7 +117,7 @@ class DependencyParser(nn.Module):
         for i in range(sentence_len):
             for j in range(sentence_len):
                 if i == j:
-                    output_mat[i, j] = float('-inf')
+                    output_mat[i, j] = float("-inf")
                 else:
                     output_mat[i, j] = input[running_index]
                     running_index += 1
@@ -130,9 +136,9 @@ class DependencyParser(nn.Module):
     #     # TODO: complete
     #     pass
 
-def main():
-    ## Hyper parameters
 
+def main():
+    # Hyper parameters
     words_embedding_list = [("glove-wiki-gigaword-200", None, None, 200)]
     # embed_list = [
     #     (
@@ -157,7 +163,12 @@ def main():
 
     load_dataset_from_pkl = False
 
-    for word_embedding_name, list_embedding_paths, word_embedding_dim_list, word_embedding_dim in words_embedding_list:
+    for (
+        word_embedding_name,
+        list_embedding_paths,
+        word_embedding_dim_list,
+        word_embedding_dim,
+    ) in words_embedding_list:
         for pos_embedding_name in pos_embedding_name_list:
             # get embeddings
             if load_dataset_from_pkl:
@@ -171,7 +182,7 @@ def main():
                     word_embedding_dim_list=word_embedding_dim_list,
                     word_embedding_dim=word_embedding_dim,
                     pos_embedding_name=pos_embedding_name,
-                    pos_embedding_dim=pos_embedding_dim
+                    pos_embedding_dim=pos_embedding_dim,
                 )
                 train_loader, test_loader, _ = Dataset.get_data_loaders(
                     batch_size=batch_size
@@ -184,13 +195,16 @@ def main():
                             "----------------------------------------------------------"
                         )
 
-                        hyper_params_title = f"{word_embedding_name=} | {pos_embedding_name=} | hidden={lstm_hidden_dim} \
+                        hyper_params_title = (
+                            f"{word_embedding_name=} | {pos_embedding_name=} "
+                        )
+                        hyper_params_title += "| hidden={lstm_hidden_dim} \
                                 \nnum_layers={lstm_num_layers} | dropout={lstm_dropout}"
                         print(hyper_params_title)
-                        model_save_path=f"{hyper_params_title}.pt"
+                        model_save_path = f"{hyper_params_title}.pt"
 
                         dependency_model = DependencyParser(
-                            embedding_dim = word_embedding_dim+pos_embedding_dim,
+                            embedding_dim=word_embedding_dim + pos_embedding_dim,
                             lstm_hidden_dim=lstm_hidden_dim,
                             lstm_num_layers=lstm_num_layers,
                             lstm_dropout=lstm_dropout,
@@ -203,7 +217,7 @@ def main():
                             val_loader=val_loader,
                             num_epochs=num_epochs,
                             optimizer=optimizer,
-                            hyper_params_title=hyper_params_title
+                            hyper_params_title=hyper_params_title,
                         )
 
 
