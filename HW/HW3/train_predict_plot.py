@@ -14,11 +14,7 @@ def train_and_plot(
     optimizer,
     hyper_params_title: str,
 ):
-
-    # -------
-    # GPU
-    # -------
-    # First checking if GPU is available
+    # GPU - checking if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
         print("Training on GPU.")
@@ -26,9 +22,8 @@ def train_and_plot(
         print("No GPU available, training on CPU.")
     device = torch.device("cpu")
     dependency_model.to(device)
-    # ----------------------------------
+
     # Epoch Loop
-    # ----------------------------------
     # prepare for evaluate
     epoch_dict = {}
     epoch_dict["total_epochs"] = num_epochs
@@ -56,7 +51,6 @@ def train_and_plot(
                     sentence.to(device),
                     true_deps.to(device),
                 )
-
                 # forward
                 loss, scores_matrix = dependency_model(sentence, true_deps)
                 # dependencies predictions
@@ -78,11 +72,36 @@ def train_and_plot(
                 epoch_num,
                 loader_type,
             )
-
     torch.save(dependency_model.state_dict(), model_save_path)
     print(f"saved model to file {model_save_path}")
     plot_epochs_results(epoch_dict=epoch_dict, hyper_params_title=hyper_params_title)
     print("--- FINISH ---")
+
+
+def predict(dependency_model, loader_to_tag):
+    # GPU - checking if GPU is available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        print("Training on GPU.")
+    else:
+        print("No GPU available, training on CPU.")
+    device = torch.device("cpu")
+    dependency_model.to(device)
+    # run predict
+    pred_deps_all = []
+    for batch_num, (sentence, true_deps) in enumerate(loader_to_tag):
+        # if training on gpu
+        sentence, true_deps = (
+            sentence.to(device),
+            true_deps.to(device),
+        )
+        # forward
+        loss, scores_matrix = dependency_model(sentence, true_deps)
+        # dependencies predictions
+        pred_deps = decode_mst(scores_matrix.clone().detach().cpu())
+        pred_deps_all.append(pred_deps)
+    pred_deps_all = np.concatenate(pred_deps_all)
+    return pred_deps_all
 
 
 def calc_correct_deps(pred_deps, true_deps):

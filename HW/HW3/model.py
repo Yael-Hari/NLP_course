@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from train_and_plot import train_and_plot
+
+from train_predict_plot import train_and_plot
 
 """ 
     ### Code Structure
@@ -50,7 +51,6 @@ class DependencyParser(nn.Module):
       
         return loss, score_mat
 
-
     def prepare_word_vectors(self):
         """
         for each word concatenate hidden vectors
@@ -84,11 +84,6 @@ class DependencyParser(nn.Module):
         """
         # TODO: complete
         pass
-
-    def predict(self):
-        # TODO: complete
-        pass
-
 
 def main():
     ## Hyper parameters
