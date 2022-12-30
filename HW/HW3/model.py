@@ -19,10 +19,10 @@ import torch.nn.functional as F
 
 
 class DependencyParser(nn.Module):
-    def __init__(self, *args):
+    def __init__(self, embedding_dim, lstm_hidden_dim, lstm_num_layers, lstm_dropout, activation):
         super(DependencyParser, self).__init__()
-        self.word_embedding = # Implement embedding layer for words (can be new or pretrained - word2vec/glove)
-        self.hidden_dim = self.word_embedding.embedding_dim
+        self.embedding_dim = embedding_dim # Implement embedding layer for words (can be new or pretrained - word2vec/glove)
+        self.lstm_hidden_dim = lstm_hidden_dim
         
         self.lstm = # Implement BiLSTM module which is fed with word embeddings and outputs hidden representations
         self.mlp = # Implement a sub-module to calculate the scores for all possible edges in sentence dependency graph
@@ -91,66 +91,9 @@ class DependencyParser(nn.Module):
 
 
 def main():
+    ## Hyper parameters
     
-
-
-def run(
-    train_loader,
-    dev_loader,
-    embedding_name,
-    vec_dim,
-    hidden_dim,
-    dropout,
-    class_weights,
-    loss_func,
-    loss_func_name,
-    batch_size,
-    O_str,
-    num_layers,
-):
-    num_classes = 2
-    num_epochs = 10
-    lr = 0.001
-    activation = nn.Tanh()
-    embedding_dim = vec_dim
-    w_list = [round(float(w), 2) for w in class_weights]
-
-    model_save_path = f"LSTM_model_stateDict_hidden={hidden_dim}_\
-        layers={num_layers}_w={w_list}_{O_str}.pt"
-
-    LSTM_model = LSTM_NER_NN(
-        embedding_dim=embedding_dim,
-        num_classes=num_classes,
-        hidden_dim=hidden_dim,
-        model_save_path=model_save_path,
-        activation=activation,
-        num_layers=num_layers,
-        dropout=dropout,
-    )
-
-    optimizer = Adam(params=LSTM_model.parameters(), lr=lr)
-
-    epoch_dict = train_and_plot_LSTM(
-        LSTM_model=LSTM_model,
-        train_loader=train_loader,
-        num_epochs=num_epochs,
-        val_loader=dev_loader,
-        optimizer=optimizer,
-        loss_func=loss_func,
-    )
-
-   plot_epochs_results(
-       epoch_dict=epoch_dict,
-       hidden=hidden_dim,
-       embedding_name=embedding_name,
-       dropout=dropout,
-       loss_func_name=loss_func_name,
-       class_weights=list(class_weights),
-       num_layers=num_layers,
-   )
-
-
-def main():
+    words_embedding_list = [("glove-wiki-gigaword-200", None, None, 200)]
     # embed_list = [
     #     (
     #         "concated",
@@ -159,69 +102,73 @@ def main():
     #         500,
     #     )
     # ]
-    # glove-wiki-gigaword-100
+    pos_embedding_name_list = ["onehot", "learn"]
+    pos_embedding_dim = 25
+    batch_size = 1
 
-    hidden_list = [256, 600, 1000]
-    hidden_list = [500]
-    dropout_list = [0.2]
-    w_list = [
-        torch.tensor([0.1, 0.9]),
-        # torch.tensor([0.2, 0.8]),
-    ]
-    batch_size = 32
-    # num_layers_list = [1, 2, 3, 4]
-    num_layers_list = [2]
+    lstm_hidden_dim_list = [250, 300]
+    lstm_num_layers_list = [1, 2, 3]
+    lstm_dropout_list = [0.25, 0.1, 0.3]
+    
+    activation = nn.Tanh()
+    optimizer = torch.optim.SGD(lr=0.1)
+    num_epochs = 10
+    torch.manual_seed(42)
 
-    for embedding_name, embedding_paths, vec_dims_list, vec_dim in embed_list:
-        torch.manual_seed(42)
-        # option 1: make
-        Dataset = SentencesEmbeddingDataset(
-            vec_dim=vec_dim,
-            list_embedding_paths=embedding_paths,
-            list_vec_dims=vec_dims_list,
-            embedding_model_path=embedding_name,
-        )
-        train_loader, dev_loader, _ = Dataset.get_data_loaders(
-            batch_size=batch_size
-        )
-        # option 2: load
-        # train_loader, dev_loader, _ = torch.load(
-        #     f"{embedding_name}.pkl"
-        # )
+    load_dataset_from_pkl = False
+    
+    for word_embedding_name, list_embedding_paths, word_embedding_dim_list, word_embedding_dim in words_embedding_list:
+        for pos_embedding_name in pos_embedding_name_list:
+            # get embeddings
+            if load_dataset_from_pkl:
+                train_loader, dev_loader, _ = torch.load(
+                    f"{word_embedding_name}_{pos_embedding_name}.pkl"
+                )
+            else:
+                Dataset = SentencesEmbeddingDataset(
+                    embedding_model_path=word_embedding_name,
+                    list_embedding_paths=list_embedding_paths,
+                    word_embedding_dim_list=word_embedding_dim_list,
+                    word_embedding_dim=word_embedding_dim,
+                    pos_embedding_name=pos_embedding_name,
+                    pos_embedding_dim=pos_embedding_dim
+                )
+                train_loader, test_loader, _ = Dataset.get_data_loaders(
+                    batch_size=batch_size
+                )
+            # run
+            for lstm_hidden_dim in lstm_hidden_dim_list:
+                for lstm_num_layers in lstm_num_layers_list:
+                    for lstm_dropout in lstm_dropout_list:
+                        print(
+                            "----------------------------------------------------------"
+                        )
+                        
+                        hyper_params_title = f"{word_embedding_name=} | {pos_embedding_name=} | hidden={lstm_hidden_dim} \
+                                \nnum_layers={lstm_num_layers} | dropout={lstm_dropout}"
+                        print(hyper_params_title)
+                        model_save_path=f"{hyper_params_title}.pt"
 
-        # run
-        for hidden_dim in hidden_list:
-            for num_layers in num_layers_list:
-                for dropout in dropout_list:
-                    for class_weights in w_list:
-                        for loss_func, loss_func_name in [
-                            (
-                                nn.CrossEntropyLoss(weight=class_weights),
-                                "CrossEntropy",
-                            ),
-                        ]:
-                            print(
-                                "----------------------------------------------------------"
-                            )
-                            print(
-                                f"{embedding_name=} | {hidden_dim=} | {dropout=} \
-                                    \n{class_weights=} | {loss_func=}"
-                            )
-                            run(
-                                train_loader=train_loader,
-                                dev_loader=dev_loader,
-                                embedding_name=embedding_name,
-                                vec_dim=vec_dim,
-                                hidden_dim=hidden_dim,
-                                dropout=dropout,
-                                class_weights=class_weights,
-                                loss_func=loss_func,
-                                loss_func_name=loss_func_name,
-                                batch_size=batch_size,
-                                num_layers=num_layers,
-                            )
+                        dependency_model = DependencyParser(
+                            embedding_dim = word_embedding_dim+pos_embedding_dim,
+                            lstm_hidden_dim=lstm_hidden_dim,
+                            lstm_num_layers=lstm_num_layers,
+                            lstm_dropout=lstm_dropout,
+                            activation=activation,
+                        )
+                        epoch_dict = train_loop(
+                            model_save_path=model_save_path,
+                            dependency_model=dependency_model,
+                            train_loader=train_loader,
+                            test_loader=test_loader,
+                            num_epochs=num_epochs,
+                            optimizer=optimizer,
+                        )
 
-
+                        plot_epochs_results(
+                            epoch_dict=epoch_dict,
+                            hyper_params_title=hyper_params_title
+                        )
 
 
 if __name__ == "__main__":
