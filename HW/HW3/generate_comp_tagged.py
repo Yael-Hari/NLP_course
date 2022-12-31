@@ -73,7 +73,7 @@ def main():
 def write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag):
     print(f"tagging this file: {file_path_no_tag}")
     # empty lines
-    empty_lines = [["", "\t"]]
+    empty_lines = ["", "\t"]
     heads = pred_deps[:, 1]
     head_curr_idx = 0
 
@@ -83,10 +83,11 @@ def write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag):
             for untagged_line in untagged_lines.split("\n"):
                 if untagged_line not in empty_lines:
                     values = untagged_line.split("\t")
-                    values[6] = heads[head_curr_idx]
+                    values[6] = str(int(heads[head_curr_idx]))
                     new_line = "\t".join(values)
+                    new_line += "\n"
+                    head_curr_idx += 1
                 else:
                     new_line = "\n"
                 preds_file.write(new_line)
     print(f"saved preds to file: {predictions_path}")
-
