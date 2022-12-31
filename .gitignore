@@ -377,3 +377,5 @@ HW/HW2/plots/val_f1=0.699_concated2022-12-12_hidden=128_CrossEntropy_           
 HW/HW3/__pycache__/chu_liu_edmonds.cpython-38.pyc
 HW/HW3/__pycache__/preprocess.cpython-38.pyc
 HW/HW3/__pycache__/train_predict_plot.cpython-38.pyc
+HW/HW3/__pycache__/generate_comp_tagged.cpython-38.pyc
+HW/HW3/__pycache__/model.cpython-38.pyc

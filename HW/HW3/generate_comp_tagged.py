@@ -89,3 +89,4 @@ def write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag):
                     new_line = "\n"
                 preds_file.write(new_line)
     print(f"saved preds to file: {predictions_path}")
+

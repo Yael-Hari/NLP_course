@@ -153,7 +153,7 @@ class SentencesEmbeddingDataset:
             sentences_lengths.append(len(sentence_embedding))
         if tagged:
             # convert to tensor
-            y = torch.stack(sentences_deps)
+            y = sentences_deps
 
         return X, y
 
@@ -170,7 +170,7 @@ class SentencesEmbeddingDataset:
             raws are splitted by \n
         output:
             sentences_words_and_pos - list of couples:  (token, token_POS)
-            sentences_deps - list of couples:           tensor(token_counter, token_head)
+            sentences_deps - list of tensor couples:           tensor(token_counter, token_head)
         """
         # init
         sentences_words_and_pos = []
@@ -185,12 +185,15 @@ class SentencesEmbeddingDataset:
             if raw_line not in empty_lines:
                 input_values = raw_line.split("\t")
                 curr_s_words_and_pos.append((input_values[1], input_values[3]))
-                curr_s_deps.append(torch.tensor([int(input_values[0]), int(input_values[6])]))
+                curr_s_deps.append(
+                    torch.tensor([int(input_values[0]), int(input_values[6])])
+                )
             else:
                 # got empty line -> finish current sentence
                 if len(curr_s_words_and_pos) > 0:
                     sentences_words_and_pos.append(curr_s_words_and_pos)
-                    sentences_deps.append(curr_s_deps)
+                    curr_s_deps_tensor = torch.stack(curr_s_deps)
+                    sentences_deps.append(curr_s_deps_tensor)
                 # init for next sentence
                 curr_s_words_and_pos = []
                 curr_s_deps = []
