@@ -144,7 +144,8 @@ class SentencesEmbeddingDataset:
         sentences_words_and_pos, sentences_deps = self.get_sentences(raw_lines)
         # get pos embeddings by train data set
         if "train" in path:
-            pos_values = [pos for _, pos in sentences_words_and_pos]
+            pos_values = [[pos for _, pos in sentence] for sentence in sentences_words_and_pos]
+            pos_values = list(set([j for i in pos_values for j in i]))
             self.pos_embeddings = self.get_pos_embeddings(pos_values)
         # get embedding for each sentence
         for sentence in sentences_words_and_pos:
@@ -241,9 +242,9 @@ class SentencesEmbeddingDataset:
         if self.list_embedding_paths is None:
             if word not in self.embedding_model.key_to_index:
                 if self.learn_unknown_word:
-                    word_vec = torch.rand(self.vec_dim, requires_grad=True)
+                    word_vec = torch.rand(self.word_embedding_dim, requires_grad=True)
                 else:
-                    word_vec = torch.zeros(self.vec_dim)
+                    word_vec = torch.zeros(self.word_embedding_dim)
             else:
                 word_vec = torch.tensor(self.embedding_model[word])
 
