@@ -56,7 +56,7 @@ def train_and_plot(
                 # dependencies predictions
                 pred_deps = decode_mst(
                     energy=scores_matrix.clone().detach().cpu(),
-                    length=scores_matrix.size(1),
+                    length=scores_matrix.size(0),
                     has_labels=False
                 )
                 pred_deps_in_format = torch.Tensor([[mod, head] for mod, head in enumerate(pred_deps[0])][1:])
