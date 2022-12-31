@@ -27,6 +27,7 @@ class DependencyParser(nn.Module):
         lstm_hidden_dim,
         lstm_num_layers,
         fc_hidden_dim,
+        tagged,
         lstm_dropout=0.25,
         activation=nn.Tanh(),
     ):
@@ -37,11 +38,13 @@ class DependencyParser(nn.Module):
         self.fc_hidden_dim = fc_hidden_dim
         self.embedding_dim = embedding_dim  # embedding dim: word2vec/glove + POS
         self.lstm_hidden_dim = lstm_hidden_dim
+        self.tagged = tagged
+        self.root_vec = torch.rand(embedding_dim, requires_grad=True)
 
         # ~~~~~~~~~ layers
         self.lstm = nn.LSTM(
             input_size=embedding_dim,
-            hidden_size=self.hidden_dim,
+            hidden_size=self.lstm_hidden_dim,
             num_layers=lstm_num_layers,
             dropout=lstm_dropout,
             bidirectional=True,
@@ -77,10 +80,13 @@ class DependencyParser(nn.Module):
             mlp_output, sentence_len
         )  # -> (n+1) X n
 
-        # Calculate the negative log likelihood loss
-        loss = self.loss_func(
-            input=self.softmax(scores_matrix), target=true_dependencies
-        )
+        # Calculate the negative log likelihood loss ---  only for tagged
+        if self.tagged:
+            loss = self.loss_func(
+                input=self.softmax(scores_matrix), target=true_dependencies
+            )
+        else:
+            loss = None
 
         return loss, scores_matrix
 
@@ -210,14 +216,13 @@ def main():
                         model_save_path = f"{hyper_params_title}.pt"
 
                         dependency_model = DependencyParser(
-                            embedding_dim=(
-                                word_embedding_dim
-                                + SentencesEmbeddingDataset.pos_embedding_dim
-                            ),
+                            embedding_dim=word_embedding_dim + Dataset.pos_embedding_dim,
                             lstm_hidden_dim=lstm_hidden_dim,
                             lstm_num_layers=lstm_num_layers,
+                            fc_hidden_dim=int(lstm_hidden_dim / 2),
                             lstm_dropout=lstm_dropout,
                             activation=activation,
+                            tagged=True
                         )
                         optimizer = torch.optim.SGD(
                             dependency_model.parameters(), lr=0.1

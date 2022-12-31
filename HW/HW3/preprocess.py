@@ -122,7 +122,7 @@ class SentencesEmbeddingDataset:
         train_dataset = self._get_dataset_from_path(self.train_path, tagged=True)
         val_dataset = self._get_dataset_from_path(self.val_path, tagged=True)
         comp_dataset = self._get_dataset_from_path(self.comp_path, tagged=False)
-        return (train_dataset, val_dataset, comp_dataset)
+        return train_dataset, val_dataset, comp_dataset
 
     def _get_dataset_from_path(self, path: str, tagged: bool):
         """

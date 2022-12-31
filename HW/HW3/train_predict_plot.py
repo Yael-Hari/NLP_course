@@ -44,15 +44,15 @@ def train_and_plot(
         if val_dataset:
             datasets["validate"] = val_dataset
 
-        for dataset_type, data_dataset in datasets.items():
-            for sentence, true_deps in data_dataset:
+        for dataset_type, (X, y) in datasets.items():
+            for sentence, true_deps in zip(X, y):
                 # if training on gpu
                 sentence, true_deps = (
                     sentence.to(device),
                     true_deps.to(device),
                 )
                 # forward
-                loss, scores_matrix = dependency_model(sentence, true_deps)
+                loss, scores_matrix = dependency_model((sentence, true_deps))
                 # dependencies predictions
                 pred_deps = decode_mst(scores_matrix.clone().detach().cpu())
                 correct_deps = calc_correct_deps(pred_deps, true_deps)
