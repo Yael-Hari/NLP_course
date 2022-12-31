@@ -32,7 +32,7 @@ def train_and_plot(
         epoch_dict[dataset_type] = {}
         epoch_dict[dataset_type]["num_correct_def_list"] = []
         epoch_dict[dataset_type]["num_total_deps_list"] = []
-        epoch_dict[dataset_type]["avg_loss_list"] = []
+        epoch_dict[dataset_type]["batch_loss_list"] = []
 
     for epoch_num in range(num_epochs):
         # prepare for evaluate
