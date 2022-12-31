@@ -59,7 +59,7 @@ def train_and_plot(
                 # update epoch dict
                 epoch_dict[dataset_type]["num_correct_def_list"].append(correct_deps)
                 epoch_dict[dataset_type]["num_total_deps_list"].append(len(true_deps))
-                epoch_dict[dataset_type]["loss_list"].append(loss.detach().cpu())
+                epoch_dict[dataset_type]["batch_loss_list"].append(loss.detach().cpu())
 
                 if dataset_type == "train":
                     # backprop
@@ -124,8 +124,8 @@ def print_epoch_details(
     num_correct = epoch_dict[dataset_type]["num_correct_def_list"][-1]
     num_total = epoch_dict[dataset_type]["num_total_deps_list"][-1]
     UAS = num_correct / num_total
-    loss_list = epoch_dict[dataset_type]["loss_list"]
-    avg_loss = np.array(loss_list).mean()
+    loss_list = epoch_dict[dataset_type]["batch_loss_list"]
+    epoch_loss = np.array(loss_list).sum()
     total_epochs_num = epoch_dict["total_epochs"]
 
     print(
@@ -134,7 +134,7 @@ def print_epoch_details(
     )
 
     epoch_dict[dataset_type]["UAS_list"].append(UAS)
-    epoch_dict[dataset_type]["avg_loss_list"].append(avg_loss)
+    epoch_dict[dataset_type]["loss_list"].append(epoch_loss)
     return epoch_dict
 
 
@@ -146,7 +146,7 @@ def plot_epochs_results(epoch_dict, hyper_params_title):
     loss_colors = {"train": "purple", "validate": "chocolate"}
     for dataset_type in dataset_types:
         UAS_vals = epoch_dict[dataset_type]["UAS_list"]
-        avg_loss_vals = epoch_dict[dataset_type]["avg_loss_list"]
+        loss_vals = epoch_dict[dataset_type]["loss_list"]
         if dataset_type == "validate":
             val_UAS = round(UAS_vals[-1], 3)
 
@@ -158,7 +158,7 @@ def plot_epochs_results(epoch_dict, hyper_params_title):
         )
         plt.plot(
             epochs_nums_list,
-            avg_loss_vals,
+            loss_vals,
             label=f"{dataset_type}_avg_loss",
             color=loss_colors[dataset_type],
         )
