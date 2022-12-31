@@ -178,7 +178,7 @@ def main():
         for pos_embedding_name in pos_embedding_name_list:
             # get embeddings
             if load_dataset_from_pkl:
-                train_loader, val_loader, _ = torch.load(
+                train_dataset, val_dataset, _ = torch.load(
                     f"{word_embedding_name}_{pos_embedding_name}.pkl"
                 )
             else:
