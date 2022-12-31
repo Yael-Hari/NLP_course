@@ -200,8 +200,12 @@ def main():
                             "----------------------------------------------------------"
                         )
 
-                        hyper_params_title = f"{word_embedding_name=} | {pos_embedding_name=} | hidden={lstm_hidden_dim} \
-                                \nnum_layers={lstm_num_layers} | dropout={lstm_dropout}"
+                        hyper_params_title = (
+                            f"{word_embedding_name=} | {pos_embedding_name=}"
+                        )
+                        hyper_params_title += f" | hidden={lstm_hidden_dim}"
+                        hyper_params_title += f" \nnum_layers={lstm_num_layers}"
+                        hyper_params_title += f" | dropout={lstm_dropout}"
                         print(hyper_params_title)
                         model_save_path = f"{hyper_params_title}.pt"
 
