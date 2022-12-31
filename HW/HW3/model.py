@@ -44,6 +44,13 @@ class DependencyParser(nn.Module):
             dropout=lstm_dropout,
             bidirectional=True,
         )
+        # self.lstm2 = nn.LSTM(
+        #     input_size=self.hidden_dim * 2,
+        #     hidden_size=self.hidden_dim,
+        #     num_layers=1,
+        #     dropout=lstm_dropout,
+        #     bidirectional=True,
+        # )
         self.fc1 = nn.Linear(self.lstm_hidden_dim * 2, self.fc_hidden_dim)
         self.activation = activation
         self.fc2 = nn.Linear(self.fc_hidden_dim, 1)
@@ -153,7 +160,6 @@ def main():
     lstm_dropout_list = [0.25, 0.1, 0.3]
 
     activation = nn.Tanh()
-    optimizer = torch.optim.SGD(lr=0.1)
     num_epochs = 10
     torch.manual_seed(42)
 
@@ -173,7 +179,7 @@ def main():
                 )
             else:
                 Dataset = SentencesEmbeddingDataset(
-                    embedding_model_path=word_embedding_name,
+                    word_embedding_name=word_embedding_name,
                     list_embedding_paths=list_embedding_paths,
                     word_embedding_dim_list=word_embedding_dim_list,
                     word_embedding_dim=word_embedding_dim,
@@ -196,12 +202,13 @@ def main():
                         model_save_path=f"{hyper_params_title}.pt"
 
                         dependency_model = DependencyParser(
-                            embedding_dim = word_embedding_dim+pos_embedding_dim,
+                            embedding_dim=word_embedding_dim+pos_embedding_dim,
                             lstm_hidden_dim=lstm_hidden_dim,
                             lstm_num_layers=lstm_num_layers,
                             lstm_dropout=lstm_dropout,
                             activation=activation,
                         )
+                        optimizer = torch.optim.SGD(dependency_model.parameters(), lr=0.1)
                         train_and_plot(
                             dependency_model=dependency_model,
                             model_save_path=model_save_path,
