@@ -15,7 +15,6 @@ def main():
     # pos embedding
     pos_embedding_name = "onehot"  # or "learn"
     pos_embedding_dim = 25
-    batch_size = 1
     # lstm params
     lstm_hidden_dim = 250
     lstm_num_layers = 2
@@ -39,12 +38,13 @@ def main():
             pos_embedding_name=pos_embedding_name,
             pos_embedding_dim=pos_embedding_dim,
         )
-        train_loader, test_loader, _ = Dataset.get_data_loaders(batch_size=batch_size)
+        _, _, comp_dateset = Dataset.get_datasets()
 
     print("----------------------------------------------------------")
 
-    hyper_params_title = f"{word_embedding_name=} | {pos_embedding_name=} | hidden={lstm_hidden_dim} \
-            \nnum_layers={lstm_num_layers} | dropout={lstm_dropout}"
+    hyper_params_title = f"{word_embedding_name=} | {pos_embedding_name=}"
+    hyper_params_title += f" | hidden={lstm_hidden_dim} \nnum_layers={lstm_num_layers}"
+    hyper_params_title += f" | dropout={lstm_dropout}"
     print(hyper_params_title)
     model_save_path = f"{hyper_params_title}.pt"
 
@@ -59,19 +59,21 @@ def main():
     dependency_model.load_state_dict(torch.load(model_save_path))
 
     # predict
-    pred_deps = predict(dependency_model=dependency_model, loader_to_tag=comp_loader)
+    pred_deps, pred_lengths = predict(
+        dependency_model=dependency_model, dataset_to_tag=comp_dateset
+    )
 
     # save tagged file
     file_path_no_tag = "comp.unlabeled"
     predictions_path = "comp_316375872_206014482.labeled"
-    write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag)
+    write_to_tagged_file(pred_deps, pred_lengths, predictions_path, file_path_no_tag)
 
     # for DEBUG
     # calc_UAC(predictions_path, tagged_real="test.labeled")
 
 
-def write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag):
-    empty_lines = ["\t", ""]
+def write_to_tagged_file(pred_deps, pred_lengths, predictions_path, file_path_no_tag):
+    # empty_lines = ["\t", ""]
     print(f"tagging this file: {file_path_no_tag}")
     with open(file_path_no_tag, "r", encoding="utf8") as untagged_file:
         with open(predictions_path, "w", encoding="utf8") as preds_file:

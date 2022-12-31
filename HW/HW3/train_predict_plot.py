@@ -8,8 +8,8 @@ from chu_liu_edmonds import decode_mst
 def train_and_plot(
     dependency_model,
     model_save_path: str,
-    train_loader,
-    val_loader,
+    train_dataset,
+    val_dataset,
     num_epochs: int,
     optimizer,
     hyper_params_title: str,
@@ -27,25 +27,25 @@ def train_and_plot(
     # prepare for evaluate
     epoch_dict = {}
     epoch_dict["total_epochs"] = num_epochs
-    loader_types = ["train", "validate"]
-    for loader_type in loader_types:
-        epoch_dict[loader_type] = {}
-        epoch_dict[loader_type]["num_correct_def_list"] = []
-        epoch_dict[loader_type]["num_total_deps_list"] = []
-        epoch_dict[loader_type]["avg_loss_list"] = []
+    dataset_types = ["train", "validate"]
+    for dataset_type in dataset_types:
+        epoch_dict[dataset_type] = {}
+        epoch_dict[dataset_type]["num_correct_def_list"] = []
+        epoch_dict[dataset_type]["num_total_deps_list"] = []
+        epoch_dict[dataset_type]["avg_loss_list"] = []
 
     for epoch_num in range(num_epochs):
         # prepare for evaluate
-        for loader_type in loader_types:
-            epoch_dict[loader_type]["loss_list"] = []
-            epoch_dict[loader_type]["UAS_list"] = []
+        for dataset_type in dataset_types:
+            epoch_dict[dataset_type]["loss_list"] = []
+            epoch_dict[dataset_type]["UAS_list"] = []
 
-        data_loaders = {"train": train_loader}
-        if val_loader:
-            data_loaders["validate"] = val_loader
+        datasets = {"train": train_dataset}
+        if val_dataset:
+            datasets["validate"] = val_dataset
 
-        for loader_type, data_loader in data_loaders.items():
-            for batch_num, (sentence, true_deps) in enumerate(data_loader):
+        for dataset_type, data_dataset in datasets.items():
+            for sentence, true_deps in data_dataset:
                 # if training on gpu
                 sentence, true_deps = (
                     sentence.to(device),
@@ -57,11 +57,11 @@ def train_and_plot(
                 pred_deps = decode_mst(scores_matrix.clone().detach().cpu())
                 correct_deps = calc_correct_deps(pred_deps, true_deps)
                 # update epoch dict
-                epoch_dict[loader_type]["num_correct_def_list"].append(correct_deps)
-                epoch_dict[loader_type]["num_total_deps_list"].append(len(true_deps))
-                epoch_dict[loader_type]["loss_list"].append(loss.detach().cpu())
+                epoch_dict[dataset_type]["num_correct_def_list"].append(correct_deps)
+                epoch_dict[dataset_type]["num_total_deps_list"].append(len(true_deps))
+                epoch_dict[dataset_type]["loss_list"].append(loss.detach().cpu())
 
-                if loader_type == "train":
+                if dataset_type == "train":
                     # backprop
                     loss.backward()
                     optimizer.step()
@@ -70,7 +70,7 @@ def train_and_plot(
             epoch_dict = print_epoch_details(
                 epoch_dict,
                 epoch_num,
-                loader_type,
+                dataset_type,
             )
     torch.save(dependency_model.state_dict(), model_save_path)
     print(f"saved model to file {model_save_path}")
@@ -78,7 +78,7 @@ def train_and_plot(
     print("--- FINISH ---")
 
 
-def predict(dependency_model, loader_to_tag):
+def predict(dependency_model, dataset_to_tag):
     # GPU - checking if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
@@ -89,7 +89,8 @@ def predict(dependency_model, loader_to_tag):
     dependency_model.to(device)
     # run predict
     pred_deps_all = []
-    for batch_num, (sentence, true_deps) in enumerate(loader_to_tag):
+    pred_lengths = []
+    for sentence, true_deps in dataset_to_tag:
         # if training on gpu
         sentence, true_deps = (
             sentence.to(device),
@@ -101,7 +102,8 @@ def predict(dependency_model, loader_to_tag):
         pred_deps = decode_mst(scores_matrix.clone().detach().cpu())
         pred_deps_all.append(pred_deps)
     pred_deps_all = np.concatenate(pred_deps_all)
-    return pred_deps_all
+    pred_lengths.append(len(pred_deps))
+    return pred_deps_all, pred_lengths
 
 
 def calc_correct_deps(pred_deps, true_deps):
@@ -122,48 +124,48 @@ def calc_correct_deps(pred_deps, true_deps):
 def print_epoch_details(
     epoch_dict,
     epoch_num,
-    loader_type,
+    dataset_type,
 ):
-    num_correct = epoch_dict[loader_type]["num_correct_def_list"][-1]
-    num_total = epoch_dict[loader_type]["num_total_deps_list"][-1]
+    num_correct = epoch_dict[dataset_type]["num_correct_def_list"][-1]
+    num_total = epoch_dict[dataset_type]["num_total_deps_list"][-1]
     UAS = num_correct / num_total
-    loss_list = epoch_dict[loader_type]["loss_list"]
+    loss_list = epoch_dict[dataset_type]["loss_list"]
     avg_loss = np.array(loss_list).mean()
     total_epochs_num = epoch_dict["total_epochs"]
 
     print(
         "Epoch: {}/{} |".format(epoch_num + 1, total_epochs_num),
-        "{} UAS: {:.3f} |".format(loader_type, UAS),
+        "{} UAS: {:.3f} |".format(dataset_type, UAS),
     )
 
-    epoch_dict[loader_type]["UAS_list"].append(UAS)
-    epoch_dict[loader_type]["avg_loss_list"].append(avg_loss)
+    epoch_dict[dataset_type]["UAS_list"].append(UAS)
+    epoch_dict[dataset_type]["avg_loss_list"].append(avg_loss)
     return epoch_dict
 
 
 def plot_epochs_results(epoch_dict, hyper_params_title):
     epochs_nums_list = np.arange(1, epoch_dict["total_epochs"] + 1)
 
-    loader_types = ["train", "validate"]
+    dataset_types = ["train", "validate"]
     UAS_colors = {"train": "seagreen", "validate": "crimson"}
     loss_colors = {"train": "purple", "validate": "chocolate"}
-    for loader_type in loader_types:
-        UAS_vals = epoch_dict[loader_type]["UAS_list"]
-        avg_loss_vals = epoch_dict[loader_type]["avg_loss_list"]
-        if loader_type == "validate":
+    for dataset_type in dataset_types:
+        UAS_vals = epoch_dict[dataset_type]["UAS_list"]
+        avg_loss_vals = epoch_dict[dataset_type]["avg_loss_list"]
+        if dataset_type == "validate":
             val_UAS = round(UAS_vals[-1], 3)
 
         plt.plot(
             epochs_nums_list,
             UAS_vals,
-            label=f"{loader_type}_UAS",
-            color=UAS_colors[loader_type],
+            label=f"{dataset_type}_UAS",
+            color=UAS_colors[dataset_type],
         )
         plt.plot(
             epochs_nums_list,
             avg_loss_vals,
-            label=f"{loader_type}_avg_loss",
-            color=loss_colors[loader_type],
+            label=f"{dataset_type}_avg_loss",
+            color=loss_colors[dataset_type],
         )
     plt.legend()
     plt.title(f"{val_UAS=} | {hyper_params_title}")

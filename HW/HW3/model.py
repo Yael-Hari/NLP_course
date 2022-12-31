@@ -150,7 +150,6 @@ def main():
     # ]
     pos_embedding_name_list = ["onehot", "learn"]
     pos_embedding_dim = 25
-    batch_size = 1
 
     lstm_hidden_dim_list = [250, 300]
     lstm_num_layers_list = [1, 2, 3]
@@ -184,9 +183,8 @@ def main():
                     pos_embedding_name=pos_embedding_name,
                     pos_embedding_dim=pos_embedding_dim,
                 )
-                train_loader, test_loader, _ = Dataset.get_data_loaders(
-                    batch_size=batch_size
-                )
+                train_dataset, val_dataset, _ = Dataset.get_datasets()
+
             # run
             for lstm_hidden_dim in lstm_hidden_dim_list:
                 for lstm_num_layers in lstm_num_layers_list:
@@ -213,8 +211,8 @@ def main():
                         train_and_plot(
                             dependency_model=dependency_model,
                             model_save_path=model_save_path,
-                            train_loader=train_loader,
-                            val_loader=val_loader,
+                            train_dataset=train_dataset,
+                            val_dataset=val_dataset,
                             num_epochs=num_epochs,
                             optimizer=optimizer,
                             hyper_params_title=hyper_params_title,
