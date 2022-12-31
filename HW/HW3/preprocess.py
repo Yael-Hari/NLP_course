@@ -188,7 +188,7 @@ class SentencesEmbeddingDataset:
                 curr_s_deps.append(torch.tensor([int(input_values[0]), int(input_values[6])]))
             else:
                 # got empty line -> finish current sentence
-                if len(sentences_words_and_pos) > 0:
+                if len(curr_s_words_and_pos) > 0:
                     sentences_words_and_pos.append(curr_s_words_and_pos)
                     sentences_deps.append(curr_s_deps)
                 # init for next sentence
