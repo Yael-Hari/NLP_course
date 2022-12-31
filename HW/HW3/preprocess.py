@@ -141,10 +141,12 @@ class SentencesEmbeddingDataset:
         with open(path, "r", encoding="utf8") as f:
             raw_lines = f.read()
         # split to sentences
-        sentences_words_and_pos, sentences_deps = self.get_sentences(raw_lines)
+        sentences_words_and_pos, sentences_deps = self.get_sentences(raw_lines, tagged)
         # get pos embeddings by train data set
         if "train" in path:
-            pos_values = [[pos for _, pos in sentence] for sentence in sentences_words_and_pos]
+            pos_values = [
+                [pos for _, pos in sentence] for sentence in sentences_words_and_pos
+            ]
             pos_values = list(set([j for i in pos_values for j in i]))
             self.pos_embeddings = self.get_pos_embeddings(pos_values)
         # get embedding for each sentence
@@ -158,10 +160,11 @@ class SentencesEmbeddingDataset:
 
         return X, y
 
-    def get_sentences(self, raw_lines):
+    def get_sentences(self, raw_lines, tagged):
         """
         input:
-            lines looks like:
+            tagged or not and
+            raw lines looks like:
             __________________________________________________________________________
             |     0        |   1    | 2 |     3     | 4 | 5 |      6     | 7 | 8 | 9 |
             __________________________________________________________________________
@@ -186,15 +189,17 @@ class SentencesEmbeddingDataset:
             if raw_line not in empty_lines:
                 input_values = raw_line.split("\t")
                 curr_s_words_and_pos.append((input_values[1], input_values[3]))
-                curr_s_deps.append(
-                    torch.tensor([int(input_values[0]), int(input_values[6])])
-                )
+                if tagged:
+                    curr_s_deps.append(
+                        torch.tensor([int(input_values[0]), int(input_values[6])])
+                    )
             else:
                 # got empty line -> finish current sentence
                 if len(curr_s_words_and_pos) > 0:
                     sentences_words_and_pos.append(curr_s_words_and_pos)
-                    curr_s_deps_tensor = torch.stack(curr_s_deps)
-                    sentences_deps.append(curr_s_deps_tensor)
+                    if tagged:
+                        curr_s_deps_tensor = torch.stack(curr_s_deps)
+                        sentences_deps.append(curr_s_deps_tensor)
                 # init for next sentence
                 curr_s_words_and_pos = []
                 curr_s_deps = []
