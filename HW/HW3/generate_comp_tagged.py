@@ -59,27 +59,33 @@ def main():
     dependency_model.load_state_dict(torch.load(model_save_path))
 
     # predict
-    pred_deps, pred_lengths = predict(
-        dependency_model=dependency_model, dataset_to_tag=comp_dateset
-    )
+    pred_deps = predict(dependency_model=dependency_model, dataset_to_tag=comp_dateset)
 
     # save tagged file
     file_path_no_tag = "comp.unlabeled"
     predictions_path = "comp_316375872_206014482.labeled"
-    write_to_tagged_file(pred_deps, pred_lengths, predictions_path, file_path_no_tag)
+    write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag)
 
     # for DEBUG
     # calc_UAC(predictions_path, tagged_real="test.labeled")
 
 
-def write_to_tagged_file(pred_deps, pred_lengths, predictions_path, file_path_no_tag):
-    # empty_lines = ["\t", ""]
+def write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag):
     print(f"tagging this file: {file_path_no_tag}")
+    # empty lines
+    empty_lines = [["", "\t"]]
+    heads = pred_deps[:, 1]
+    head_curr_idx = 0
+
     with open(file_path_no_tag, "r", encoding="utf8") as untagged_file:
+        untagged_lines = untagged_file.read()
         with open(predictions_path, "w", encoding="utf8") as preds_file:
-            heads = pred_deps[:, 1]
-            for head in heads:
-                untagged_line = untagged_file.readline()
-                # TODO: complete
-                preds_file.write("something")
-    pass
+            for untagged_line in untagged_lines.split("\n"):
+                if untagged_line not in empty_lines:
+                    values = untagged_line.split("\t")
+                    values[6] = heads[head_curr_idx]
+                    new_line = "\t".join(values)
+                else:
+                    new_line = "\n"
+                preds_file.write(new_line)
+    print(f"saved preds to file: {predictions_path}")

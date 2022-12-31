@@ -89,7 +89,6 @@ def predict(dependency_model, dataset_to_tag):
     dependency_model.to(device)
     # run predict
     pred_deps_all = []
-    pred_lengths = []
     for sentence, true_deps in dataset_to_tag:
         # if training on gpu
         sentence, true_deps = (
@@ -102,8 +101,7 @@ def predict(dependency_model, dataset_to_tag):
         pred_deps = decode_mst(scores_matrix.clone().detach().cpu())
         pred_deps_all.append(pred_deps)
     pred_deps_all = np.concatenate(pred_deps_all)
-    pred_lengths.append(len(pred_deps))
-    return pred_deps_all, pred_lengths
+    return pred_deps_all
 
 
 def calc_correct_deps(pred_deps, true_deps):
