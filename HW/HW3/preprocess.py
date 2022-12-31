@@ -185,7 +185,7 @@ class SentencesEmbeddingDataset:
             if raw_line not in empty_lines:
                 input_values = raw_line.split("\t")
                 curr_s_words_and_pos.append((input_values[1], input_values[3]))
-                curr_s_deps.append(torch.tensor(input_values[0], input_values[6]))
+                curr_s_deps.append(torch.tensor([int(input_values[0]), int(input_values[6])]))
             else:
                 # got empty line -> finish current sentence
                 if len(sentences_words_and_pos) > 0:
