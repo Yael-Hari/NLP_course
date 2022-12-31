@@ -145,7 +145,7 @@ class SentencesEmbeddingDataset:
         # get pos embeddings by train data set
         if "train" in path:
             pos_values = [pos for _, pos in sentences_words_and_pos]
-            self.pos_embeddings = self.get_pos_embeddings(self, pos_values)
+            self.pos_embeddings = self.get_pos_embeddings(pos_values)
         # get embedding for each sentence
         for sentence in sentences_words_and_pos:
             sentence_embedding = self.get_sentence_embedding(sentence)
