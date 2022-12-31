@@ -54,7 +54,10 @@ def train_and_plot(
                 # forward
                 loss, scores_matrix = dependency_model((sentence, true_deps))
                 # dependencies predictions
-                pred_deps = decode_mst(scores_matrix.clone().detach().cpu())
+                pred_deps = decode_mst(
+                    energy=scores_matrix.clone().detach().cpu(),
+                    length=scores_matrix.size(0)
+                )
                 correct_deps = calc_correct_deps(pred_deps, true_deps)
                 # update epoch dict
                 epoch_dict[dataset_type]["num_correct_def_list"].append(correct_deps)

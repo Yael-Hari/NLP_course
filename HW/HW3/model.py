@@ -39,7 +39,7 @@ class DependencyParser(nn.Module):
         self.embedding_dim = embedding_dim  # embedding dim: word2vec/glove + POS
         self.lstm_hidden_dim = lstm_hidden_dim
         self.tagged = tagged
-        self.root_vec = torch.rand(embedding_dim, requires_grad=True)
+        self.root_vec = torch.rand(embedding_dim, requires_grad=True).unsqueeze(0)
 
         # ~~~~~~~~~ layers
         self.lstm = nn.LSTM(
@@ -56,24 +56,24 @@ class DependencyParser(nn.Module):
         #     dropout=lstm_dropout,
         #     bidirectional=True,
         # )
-        self.fc1 = nn.Linear(self.lstm_hidden_dim * 2, self.fc_hidden_dim)
+        self.fc1 = nn.Linear(self.lstm_hidden_dim * 4, self.fc_hidden_dim)
         self.activation = activation
         self.fc2 = nn.Linear(self.fc_hidden_dim, 1)
         self.mlp = nn.Sequential(self.fc1, self.activation, self.fc2)
 
         # ~~~~~~~~~ final funcs
-        self.softmax = nn.LogSoftmax(dim=0)  # dim=0 for cols, dim=1 for rows
+        self.log_softmax = nn.LogSoftmax(dim=0)  # dim=0 for cols, dim=1 for rows
         self.loss_func = nn.NLLLoss()
 
     def forward(self, sentence):
         sentence_embedded, true_dependencies = sentence
         sentence_len = sentence_embedded.size(0)
         sentence_embedded = torch.concat([sentence_embedded, self.root_vec])
-        lstm_output = self.prepare_lstm_output(input=sentence_embedded)  # (n+1) X h
+        lstm_output = self.prepare_lstm_output(input=sentence_embedded)  # (n+1) X 2h
         concated_pairs = self.concat_pairs(
             lstm_output, sentence_len
-        )  # -> ((n+1)^2 - (n+1)) X h
-        mlp_output = self.mlp(concated_pairs)  # -> ((n+1)^2 - (n+1)) X 1
+        )  # -> ((n+1)^2 - (n+1) - n) X 4h
+        mlp_output = self.mlp(concated_pairs)  # -> ((n+1)^2 - (2n+1)) X 1
 
         # construct score matrix, with diag: torch.exp(torch.Tensor([float('-inf')]))
         scores_matrix = self.reshape_scores_vec_to_scores_mat(
@@ -83,10 +83,12 @@ class DependencyParser(nn.Module):
         # Calculate the negative log likelihood loss ---  only for tagged
         if self.tagged:
             loss = self.loss_func(
-                input=self.softmax(scores_matrix), target=true_dependencies
+                input=self.log_softmax(scores_matrix).T, target=torch.stack([x[1] for x in true_dependencies])
             )
         else:
             loss = None
+
+        scores_matrix
 
         return loss, scores_matrix
 
@@ -126,9 +128,9 @@ class DependencyParser(nn.Module):
 
         # with diag: torch.exp(torch.Tensor([float('-inf')]))
         """
-        output_mat = torch.zeros(sentence_len, sentence_len)
+        output_mat = torch.zeros(sentence_len + 1, sentence_len)
         running_index = 0
-        for i in range(sentence_len):
+        for i in range(sentence_len + 1):
             for j in range(sentence_len):
                 if i == j:
                     output_mat[i, j] = float("-inf")
