@@ -374,3 +374,6 @@ HW/HW2/data/comp_206014482_316375872.tagged
 HW/HW2/__pycache__/predict_model3.cpython-38.pyc
 HW/HW2/plots/val_f1=0.699_concated2022-12-12_hidden=128_CrossEntropy_                drop=0.2_w=[0.1, 0.9].png
 HW/HW2/plots/val_f1=0.699_concated2022-12-12_hidden=128_CrossEntropy_                drop=0.2_w=[0.1, 0.9].png
+HW/HW3/__pycache__/chu_liu_edmonds.cpython-38.pyc
+HW/HW3/__pycache__/preprocess.cpython-38.pyc
+HW/HW3/__pycache__/train_predict_plot.cpython-38.pyc
