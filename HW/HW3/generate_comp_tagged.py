@@ -54,6 +54,7 @@ def main():
         lstm_num_layers=lstm_num_layers,
         lstm_dropout=lstm_dropout,
         activation=activation,
+        tagged=False,
     )
 
     dependency_model.load_state_dict(torch.load(model_save_path))

@@ -89,14 +89,11 @@ def predict(dependency_model, dataset_to_tag):
     dependency_model.to(device)
     # run predict
     pred_deps_all = []
-    for sentence, true_deps in dataset_to_tag:
+    for sentence in dataset_to_tag:
         # if training on gpu
-        sentence, true_deps = (
-            sentence.to(device),
-            true_deps.to(device),
-        )
+        sentence, true_deps = (sentence.to(device),)
         # forward
-        loss, scores_matrix = dependency_model(sentence, true_deps)
+        _, scores_matrix = dependency_model(sentence, true_deps)
         # dependencies predictions
         pred_deps = decode_mst(scores_matrix.clone().detach().cpu())
         pred_deps_all.append(pred_deps)
