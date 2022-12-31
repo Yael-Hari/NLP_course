@@ -59,7 +59,7 @@ def train_and_plot(
                     length=scores_matrix.size(1),
                     has_labels=False
                 )
-                pred_deps_in_format = [(mod, head) for mod, head in enumerate(pred_deps)][1:]
+                pred_deps_in_format = torch.Tensor([[mod, head] for mod, head in enumerate(pred_deps[0])][1:])
                 correct_deps = calc_correct_deps(pred_deps_in_format, true_deps)
                 # update epoch dict
                 epoch_dict[dataset_type]["num_correct_def_list"].append(correct_deps)
