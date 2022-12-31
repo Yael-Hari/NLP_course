@@ -4,7 +4,7 @@ import torch.nn as nn
 from preprocess import SentencesEmbeddingDataset
 from train_predict_plot import train_and_plot
 
-"""
+""" 
     ### Code Structure
 
     0. Prepare Hyper Parametrs
@@ -21,20 +21,18 @@ from train_predict_plot import train_and_plot
 
 
 class DependencyParser(nn.Module):
-    def __init__(
-        self,
-        embedding_dim,
-        lstm_hidden_dim,
-        lstm_num_layers,
-        fc_hidden_dim,
-        lstm_dropout=0.25,
-        activation=nn.Tanh(),
-    ):
+    def __init__(self,
+                 embedding_dim,
+                 lstm_hidden_dim,
+                 lstm_num_layers,
+                 fc_hidden_dim,
+                 lstm_dropout=0.25,
+                 activation=nn.Tanh()):
 
         super(DependencyParser, self).__init__()
 
         # ~~~~~~~~~ variables
-        self.hidden_dim = fc_hidden_dim
+        self.fc_hidden_dim = fc_hidden_dim
         self.embedding_dim = embedding_dim  # embedding dim: word2vec/glove + POS
         self.lstm_hidden_dim = lstm_hidden_dim
 
@@ -46,36 +44,32 @@ class DependencyParser(nn.Module):
             dropout=lstm_dropout,
             bidirectional=True,
         )
-        self.fc1 = nn.Linear(self.hidden_dim * 2, self.hidden_dim)
+        self.fc1 = nn.Linear(self.lstm_hidden_dim * 2, self.fc_hidden_dim)
         self.activation = activation
-        self.fc2 = nn.Linear(self.hidden_dim, self.hidden_dim)
+        self.fc2 = nn.Linear(self.fc_hidden_dim, 1)
         self.mlp = nn.Sequential(
             self.fc1,
             self.activation,
+            self.fc2
         )
 
         # ~~~~~~~~~ final funcs
-        self.softmax = nn.LogSoftmax(dim=0)  # dim=0 for cols, dim=1 for rows
+        self.softmax = nn.LogSoftmax(dim=0)   # dim=0 for cols, dim=1 for rows
         self.loss_func = nn.NLLLoss()
 
     def forward(self, sentence):
-        # input: Xi - sentence, Yi - true dependencies of this sentence
-        # output: Scores Matrix
         sentence_embedded, true_dependencies = sentence
         sentence_len = sentence_embedded.size(0)
         sentence_embedded = torch.concat([sentence_embedded, self.root_vec])
-        lstm_output = self.prepare_lstm_output(input=sentence_embedded)  # (n+1) X h
-        concated_pairs = self.concat_pairs(lstm_output)  # -> ((n+1)^2 - (n+1)) X h
-        mlp_output = self.mlp(concated_pairs)  # -> ((n+1)^2 - (n+1)) X 1
-        # Get score for each possible edge in the parsing graph, construct score matrix
-        scores_matrix = self.reshape_to_scores_vec_to_scores_mat(
-            mlp_output, sentence_len
-        )  # -> (n+1) X n, with diag: torch.exp(torch.Tensor([float('-inf')]))
+        lstm_output = self.prepare_lstm_output(input=sentence_embedded)     # (n+1) X h
+        concated_pairs = self.concat_pairs(lstm_output, sentence_len)       # -> ((n+1)^2 - (n+1)) X h
+        mlp_output = self.mlp(concated_pairs)                               # -> ((n+1)^2 - (n+1)) X 1
+
+        # construct score matrix, with diag: torch.exp(torch.Tensor([float('-inf')]))
+        scores_matrix = self.reshape_scores_vec_to_scores_mat(mlp_output, sentence_len)  # -> (n+1) X n
 
         # Calculate the negative log likelihood loss
-        loss = self.loss_func(
-            input=self.softmax(scores_matrix), target=true_dependencies
-        )
+        loss = self.loss_func(input=self.softmax(scores_matrix), target=true_dependencies)
 
         return loss, scores_matrix
 
@@ -84,14 +78,17 @@ class DependencyParser(nn.Module):
         for each word concatenate hidden vectors
         """
         lstm_output, (hn, cn) = self.lstm(input=input)
-        # TODO: concat different
+        # TODO: concat outputs from different layers?
         return lstm_output
 
-    def concat_pairs(self, mat):
-        """input of size: (n+1)Xh"""
+    def concat_pairs(self, mat, sentence_len):
+        """
+            input of size: (n+1)Xh;
+            sentence_len = n
+        """
         concated_vecs_list = []
-        for i in range(mat.size(0)):
-            for j in range(mat.size(0) - 1):  # not including the root vec
+        for i in range(sentence_len + 1):   # including the root vec
+            for j in range(sentence_len):   # not including the root vec
                 if i == j:
                     continue
                 curr_vec = torch.concat([mat[i], mat[j]])
@@ -99,7 +96,7 @@ class DependencyParser(nn.Module):
         concated_vecs = torch.stack(concated_vecs_list)
         return concated_vecs
 
-    def reshape_to_scores_vec_to_scores_mat(self, input, sentence_len):
+    def reshape_scores_vec_to_scores_mat(self, vec_to_reshape, sentence_len):
         """
         a. Prepare Matrix for MLP (multi layer perceptron):
             shape: (n**2 - n, 2 * word_dim)
@@ -109,17 +106,17 @@ class DependencyParser(nn.Module):
         c. Constract Scores Matrix
             shape: (n, n)
             matrix[i][j] = score of (v_i, v_j)
-        """
+
         # with diag: torch.exp(torch.Tensor([float('-inf')]))
-        # TODO: complete
+        """
         output_mat = torch.zeros(sentence_len, sentence_len)
         running_index = 0
         for i in range(sentence_len):
             for j in range(sentence_len):
                 if i == j:
-                    output_mat[i, j] = float("-inf")
+                    output_mat[i, j] = float('-inf')
                 else:
-                    output_mat[i, j] = input[running_index]
+                    output_mat[i, j] = vec_to_reshape[running_index]
                     running_index += 1
         return output_mat
 
@@ -195,16 +192,13 @@ def main():
                             "----------------------------------------------------------"
                         )
 
-                        hyper_params_title = (
-                            f"{word_embedding_name=} | {pos_embedding_name=} "
-                        )
-                        hyper_params_title += "| hidden={lstm_hidden_dim} \
+                        hyper_params_title = f"{word_embedding_name=} | {pos_embedding_name=} | hidden={lstm_hidden_dim} \
                                 \nnum_layers={lstm_num_layers} | dropout={lstm_dropout}"
                         print(hyper_params_title)
-                        model_save_path = f"{hyper_params_title}.pt"
+                        model_save_path=f"{hyper_params_title}.pt"
 
                         dependency_model = DependencyParser(
-                            embedding_dim=word_embedding_dim + pos_embedding_dim,
+                            embedding_dim = word_embedding_dim+pos_embedding_dim,
                             lstm_hidden_dim=lstm_hidden_dim,
                             lstm_num_layers=lstm_num_layers,
                             lstm_dropout=lstm_dropout,
@@ -217,7 +211,7 @@ def main():
                             val_loader=val_loader,
                             num_epochs=num_epochs,
                             optimizer=optimizer,
-                            hyper_params_title=hyper_params_title,
+                            hyper_params_title=hyper_params_title
                         )
 
 
