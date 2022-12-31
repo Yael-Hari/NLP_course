@@ -56,9 +56,11 @@ def train_and_plot(
                 # dependencies predictions
                 pred_deps = decode_mst(
                     energy=scores_matrix.clone().detach().cpu(),
-                    length=scores_matrix.size(0)
+                    length=scores_matrix.size(1),
+                    has_labels=False
                 )
-                correct_deps = calc_correct_deps(pred_deps, true_deps)
+                pred_deps_in_format = [(mod, head) for mod, head in enumerate(pred_deps)][1:]
+                correct_deps = calc_correct_deps(pred_deps_in_format, true_deps)
                 # update epoch dict
                 epoch_dict[dataset_type]["num_correct_def_list"].append(correct_deps)
                 epoch_dict[dataset_type]["num_total_deps_list"].append(len(true_deps))
@@ -106,7 +108,7 @@ def predict(dependency_model, dataset_to_tag):
 
 def calc_correct_deps(pred_deps, true_deps):
     """
-    Example:
+    Example: (modifier, head)
     True   Pred  Correct
     1 2     1 2     V
     2 0     2 0     V

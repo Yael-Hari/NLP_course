@@ -88,8 +88,9 @@ class DependencyParser(nn.Module):
         else:
             loss = None
 
-        scores_matrix
-
+        col_to_add = torch.ones((sentence_len + 1, 1)) * float('-inf')
+        scores_matrix = torch.concat([col_to_add, scores_matrix], 1)
+        scores_matrix = torch.concat([scores_matrix[-1].unsqueeze(0), scores_matrix[:-1]])
         return loss, scores_matrix
 
     def prepare_lstm_output(self, input):
