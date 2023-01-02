@@ -66,7 +66,8 @@ class SentencesEmbeddingDataset:
         self.comp_path = "comp.unlabeled"
 
         # FOR DEBUG
-        self.train_path = "mini_train.labeled"
+        self.train_path = "mini_mini_train.labeled"
+        self.val_path = "mini_mini_train.labeled"
 
     def get_pos_embeddings(self, pos_values):
         if self.pos_embedding_name == "learn":
