@@ -17,6 +17,14 @@ from train_predict_plot import train_and_plot
         forward
         predict - Run chu_liu_edmonds to get Predicted Tree
         evaluate - UAS & Loss pronts and plots
+
+    * Calculate Negative Log Likelihood Loss
+        a. Get Prob Matrix
+            do softmax for each column of Scores Matrix
+            (assuming each column represants modifier word and each row represants head word)
+        b. loss = sum over all sentences (Xi, Yi):
+            sum over all couples of (head, modifier) in Yi (true dependencies):
+                - log(Prob[head][modifier]) / |Yi|
 """
 
 
@@ -83,14 +91,17 @@ class DependencyParser(nn.Module):
         # Calculate the negative log likelihood loss ---  only for tagged
         if self.tagged:
             loss = self.loss_func(
-                input=self.log_softmax(scores_matrix).T, target=torch.stack([x[1] for x in true_dependencies])
+                input=self.log_softmax(scores_matrix).T,
+                target=torch.stack([x[1] for x in true_dependencies]),
             )
         else:
             loss = None
 
-        col_to_add = torch.ones((sentence_len + 1, 1)) * float('-inf')
+        col_to_add = torch.ones((sentence_len + 1, 1)) * float("-inf")
         scores_matrix = torch.concat([col_to_add, scores_matrix], 1)
-        scores_matrix = torch.concat([scores_matrix[-1].unsqueeze(0), scores_matrix[:-1]])
+        scores_matrix = torch.concat(
+            [scores_matrix[-1].unsqueeze(0), scores_matrix[:-1]]
+        )
         return loss, scores_matrix
 
     def prepare_lstm_output(self, input):
@@ -105,6 +116,10 @@ class DependencyParser(nn.Module):
         """
         input of size: (n+1)Xh;
         sentence_len = n
+
+        Prepare Matrix for MLP (multi layer perceptron):
+            shape: ((n+ 1) * n - n, 2 * word_dim)
+            each row is concatination of couple of words v_i v_j
         """
         concated_vecs_list = []
         for i in range(sentence_len + 1):  # including the root vec
@@ -118,16 +133,9 @@ class DependencyParser(nn.Module):
 
     def reshape_scores_vec_to_scores_mat(self, vec_to_reshape, sentence_len):
         """
-        a. Prepare Matrix for MLP (multi layer perceptron):
-            shape: (n**2 - n, 2 * word_dim)
-            each row is concatination of couple of words v_i v_j
-            * prepare dict {idx: (v_i, v_j)}
-        b. MLP: Run matrix in FC with 2 layers and tanh activation between them
-        c. Constract Scores Matrix
-            shape: (n, n)
+        Constract Scores Matrix
+            shape: (n + 1, n)
             matrix[i][j] = score of (v_i, v_j)
-
-        # with diag: torch.exp(torch.Tensor([float('-inf')]))
         """
         output_mat = torch.zeros(sentence_len + 1, sentence_len)
         running_index = 0
@@ -139,19 +147,6 @@ class DependencyParser(nn.Module):
                     output_mat[i, j] = vec_to_reshape[running_index]
                     running_index += 1
         return output_mat
-
-    # def loss_function(self, scores_matrix):
-    #     """
-    #     1. Calculate Negative Log Likelihood Loss
-    #         a. Get Prob Matrix
-    #             do softmax for each column of Scores Matrix
-    #             (assuming each column represants modifier word and each row represants head word)
-    #         b. loss = sum over all sentences (Xi, Yi):
-    #             sum over all couples of (head, modifier) in Yi (true dependencies):
-    #                 - log(Prob[head][modifier]) / |Yi|
-    #     """
-    #     # TODO: complete
-    #     pass
 
 
 def main():
@@ -219,13 +214,14 @@ def main():
                         model_save_path = f"{hyper_params_title}.pt"
 
                         dependency_model = DependencyParser(
-                            embedding_dim=word_embedding_dim + Dataset.pos_embedding_dim,
+                            embedding_dim=word_embedding_dim
+                            + Dataset.pos_embedding_dim,
                             lstm_hidden_dim=lstm_hidden_dim,
                             lstm_num_layers=lstm_num_layers,
                             fc_hidden_dim=int(lstm_hidden_dim / 2),
                             lstm_dropout=lstm_dropout,
                             activation=activation,
-                            tagged=True
+                            tagged=True,
                         )
                         optimizer = torch.optim.SGD(
                             dependency_model.parameters(), lr=0.1
