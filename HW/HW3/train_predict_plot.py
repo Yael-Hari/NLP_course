@@ -39,6 +39,8 @@ def train_and_plot(
         datasets = {"train": train_dataset}
         if val_dataset:
             datasets["validate"] = val_dataset
+            pred_deps_all_val = []
+            true_deps_all_val = []
 
         # prepare for evaluate
         for dataset_type in dataset_types:
@@ -65,6 +67,10 @@ def train_and_plot(
                 pred_deps_in_format = torch.Tensor(
                     [[mod, head] for mod, head in enumerate(pred_deps[0])][1:]
                 )
+                if dataset_type == "validate":
+                    pred_deps_all_val.append(pred_deps_in_format)
+                    true_deps_all_val.append(true_deps)
+
                 correct_deps = calc_correct_deps(pred_deps_in_format, true_deps)
                 # update epoch dict
                 epoch_dict[dataset_type]["epoch_num_correct_def_list"].append(
@@ -91,6 +97,13 @@ def train_and_plot(
             print("epoch_time:", time.time() - start)
     torch.save(dependency_model.state_dict(), model_save_path)
     print(f"saved model to file {model_save_path}")
+    with open("pred_deps_all_val.txt", "w") as f:
+        for i in pred_deps_all_val:
+            f.write(str(i) + "\n")
+    with open("true_deps_all_val.txt", "w") as f:
+        for i in true_deps_all_val:
+            f.write(str(i) + "\n")
+
     plot_epochs_results(epoch_dict=epoch_dict, hyper_params_title=hyper_params_title)
     print("--- FINISH ---")
 
@@ -135,6 +148,12 @@ def predict(dependency_model, dataset_to_tag, tagged):
         UAC = calc_correct_deps(pred_deps_all, true_deps_all) / len(true_deps_all)
         print("loss:", np.round(np.sum(loss_list), 3))
         print("UAC:", UAC)
+        with open("pred_deps_all 2.txt", "w") as f:
+            for i in pred_deps_all:
+                f.write(str(i) + "\n")
+        with open("true_deps_all 2.txt", "w") as f:
+            for i in true_deps_all:
+                f.write(str(i) + "\n")
     else:
         true_deps = None
         X = dataset_to_tag
