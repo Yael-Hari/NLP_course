@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from chu_liu_edmonds import decode_mst
 
@@ -30,20 +31,21 @@ def train_and_plot(
     dataset_types = ["train", "validate"]
     for dataset_type in dataset_types:
         epoch_dict[dataset_type] = {}
-        epoch_dict[dataset_type]["num_correct_def_list"] = []
-        epoch_dict[dataset_type]["num_total_deps_list"] = []
-        epoch_dict[dataset_type]["batch_loss_list"] = []
-    # prepare for evaluate
-    for dataset_type in dataset_types:
-        epoch_dict[dataset_type]["loss_list"] = []
-        epoch_dict[dataset_type]["UAS_list"] = []
+        epoch_dict[dataset_type]["all_epochs_loss_list"] = []
+        epoch_dict[dataset_type]["all_epochs_UAS_list"] = []
 
     for epoch_num in range(num_epochs):
         datasets = {"train": train_dataset}
         if val_dataset:
             datasets["validate"] = val_dataset
 
-        for dataset_type, (X, y) in datasets.items():
+        # prepare for evaluate
+        for dataset_type in dataset_types:
+            epoch_dict[dataset_type]["epoch_num_correct_def_list"] = []
+            epoch_dict[dataset_type]["epoch_num_total_deps_list"] = []
+            epoch_dict[dataset_type]["epoch_loss_list"] = []
+
+        for dataset_type, (X, y) in tqdm(datasets.items()):
             for sentence, true_deps in zip(X, y):
                 # if training on gpu
                 sentence, true_deps = (
@@ -63,9 +65,13 @@ def train_and_plot(
                 )
                 correct_deps = calc_correct_deps(pred_deps_in_format, true_deps)
                 # update epoch dict
-                epoch_dict[dataset_type]["num_correct_def_list"].append(correct_deps)
-                epoch_dict[dataset_type]["num_total_deps_list"].append(len(true_deps))
-                epoch_dict[dataset_type]["batch_loss_list"].append(
+                epoch_dict[dataset_type]["epoch_num_correct_def_list"].append(
+                    correct_deps
+                )
+                epoch_dict[dataset_type]["epoch_num_total_deps_list"].append(
+                    len(true_deps)
+                )
+                epoch_dict[dataset_type]["epoch_loss_list"].append(
                     loss.clone().detach().cpu()
                 )
 
@@ -129,10 +135,10 @@ def print_epoch_details(
     epoch_num,
     dataset_type,
 ):
-    num_correct = epoch_dict[dataset_type]["num_correct_def_list"][-1]
-    num_total = epoch_dict[dataset_type]["num_total_deps_list"][-1]
+    num_correct = epoch_dict[dataset_type]["epoch_num_correct_def_list"][-1]
+    num_total = epoch_dict[dataset_type]["epoch_num_total_deps_list"][-1]
     UAS = num_correct / num_total
-    loss_list = epoch_dict[dataset_type]["batch_loss_list"]
+    loss_list = epoch_dict[dataset_type]["epoch_loss_list"]
     epoch_loss = np.array(loss_list).sum()
     total_epochs_num = epoch_dict["total_epochs"]
 
@@ -142,8 +148,8 @@ def print_epoch_details(
         "{} loss: {:.3f} |".format(dataset_type, epoch_loss),
     )
 
-    epoch_dict[dataset_type]["UAS_list"].append(UAS)
-    epoch_dict[dataset_type]["loss_list"].append(epoch_loss)
+    epoch_dict[dataset_type]["all_epochs_UAS_list"].append(UAS)
+    epoch_dict[dataset_type]["all_epochs_loss_list"].append(epoch_loss)
     return epoch_dict
 
 
@@ -154,8 +160,8 @@ def plot_epochs_results(epoch_dict, hyper_params_title):
     UAS_colors = {"train": "seagreen", "validate": "crimson"}
     loss_colors = {"train": "purple", "validate": "chocolate"}
     for dataset_type in dataset_types:
-        UAS_vals = epoch_dict[dataset_type]["UAS_list"]
-        loss_vals = epoch_dict[dataset_type]["loss_list"]
+        UAS_vals = epoch_dict[dataset_type]["all_epochs_UAS_list"]
+        loss_vals = epoch_dict[dataset_type]["all_epochs_loss_list"]
         if dataset_type == "validate":
             val_UAS = round(float(UAS_vals[-1]), 3)
 
