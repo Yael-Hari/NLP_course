@@ -22,7 +22,7 @@ def train_and_plot(
         print("Training on GPU.")
     else:
         print("No GPU available, training on CPU.")
-    device = torch.device("cpu")
+    # device = torch.device("cpu")
     dependency_model.to(device)
 
     # Epoch Loop
@@ -71,7 +71,7 @@ def train_and_plot(
                     pred_deps_all_val.append(pred_deps_in_format)
                     true_deps_all_val.append(true_deps)
 
-                correct_deps = calc_correct_deps(pred_deps_in_format, true_deps)
+                correct_deps = calc_correct_deps(pred_deps_in_format, true_deps.clone().detach().cpu())
                 # update epoch dict
                 epoch_dict[dataset_type]["epoch_num_correct_def_list"].append(
                     correct_deps

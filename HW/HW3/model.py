@@ -47,8 +47,10 @@ class DependencyParser(nn.Module):
         self.embedding_dim = embedding_dim  # embedding dim: word2vec/glove + POS
         self.lstm_hidden_dim = lstm_hidden_dim
         self.tagged = tagged
-        # self.root_vec = torch.rand(embedding_dim, requires_grad=False).unsqueeze(0)
-        self.root_vec = torch.zeros(embedding_dim).unsqueeze(0)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # self.root_vec = torch.rand(embedding_dim, requires_grad=False).unsqueeze(0).to(self.device)
+        self.root_vec = torch.zeros(embedding_dim).unsqueeze(0).to(self.device)
 
         # ~~~~~~~~~ layers
         self.lstm = nn.LSTM(
@@ -66,6 +68,7 @@ class DependencyParser(nn.Module):
         # ~~~~~~~~~ final funcs
         self.log_softmax = nn.LogSoftmax(dim=0)  # dim=0 for cols, dim=1 for rows
         self.loss_func = nn.NLLLoss()
+
 
     def forward(self, sentence):
         sentence_embedded, true_dependencies = sentence
@@ -85,7 +88,7 @@ class DependencyParser(nn.Module):
         # Calculate the negative log likelihood loss ---  only for tagged
         if self.tagged:
             loss = self.loss_func(
-                input=self.log_softmax(scores_matrix).T,
+                input=self.log_softmax(scores_matrix).T.to(self.device),
                 target=torch.stack([x[1] for x in true_dependencies]),
             )
         else:
