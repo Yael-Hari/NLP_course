@@ -74,9 +74,10 @@ class SentencesEmbeddingDataset:
             pos_embeddings = {}
             pos_values.append("unknown")
             for pos in pos_values:
-                pos_embeddings[pos] = torch.rand(
-                    self.pos_embedding_dim, requires_grad=False
-                )
+                # pos_embeddings[pos] = torch.rand(
+                #     self.pos_embedding_dim, requires_grad=False
+                # )
+                pos_embeddings[pos] = torch.zeros(self.pos_embedding_dim)
         elif self.pos_embedding_name == "onehot":
             pos_values.append("unknown")
             pos_one_hot = F.one_hot(torch.arange(0, len(pos_values)))
@@ -254,7 +255,8 @@ class SentencesEmbeddingDataset:
         if self.list_embedding_paths is None:
             if word not in self.embedding_model.key_to_index:
                 if self.learn_unknown_word:
-                    word_vec = torch.rand(self.word_embedding_dim, requires_grad=False)
+                    # word_vec = torch.rand(self.word_embedding_dim, requires_grad=False)
+                    word_vec = torch.zeros(self.word_embedding_dim)
                 else:
                     word_vec = torch.zeros(self.word_embedding_dim)
             else:
@@ -267,9 +269,10 @@ class SentencesEmbeddingDataset:
             for i in range(len(self.embedding_model)):
                 if word not in self.embedding_model[i].key_to_index:
                     if self.learn_unknown_word:
-                        word_vec.append(
-                            torch.rand(self.list_vec_dims[i], requires_grad=False)
-                        )
+                        # word_vec.append(
+                        #     torch.rand(self.list_vec_dims[i], requires_grad=False)
+                        # )
+                        word_vec.append(torch.zeros(self.list_vec_dims[i]))
                     else:
                         word_vec.append(torch.zeros(self.list_vec_dims[i]))
                 else:
