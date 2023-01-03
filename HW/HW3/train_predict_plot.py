@@ -104,7 +104,11 @@ def train_and_plot(
         for i in true_deps_all_val:
             f.write(str(i) + "\n")
 
-    plot_epochs_results(epoch_dict=epoch_dict, hyper_params_title=hyper_params_title)
+    plot_epochs_results(
+        epoch_dict=epoch_dict,
+        hyper_params_title=hyper_params_title,
+        model_save_path=model_save_path,
+    )
     print("--- FINISH ---")
 
 
@@ -217,7 +221,7 @@ def print_epoch_details(
     return epoch_dict
 
 
-def plot_epochs_results(epoch_dict, hyper_params_title):
+def plot_epochs_results(epoch_dict, hyper_params_title, model_save_path):
     epochs_nums_list = np.arange(1, epoch_dict["total_epochs"] + 1)
 
     dataset_types = ["train", "validate"]
@@ -238,7 +242,7 @@ def plot_epochs_results(epoch_dict, hyper_params_title):
     plt.title(f"{UAS=} | {hyper_params_title}")
     plt.ylabel("Score")
     plt.xlabel("Epoch")
-    file_name = f"plots/{UAS=}_{hyper_params_title}.png"
+    file_name = f"plots/{UAS=}_{model_save_path}.png"
 
     plt.savefig(file_name)
     plt.clf()
@@ -259,7 +263,7 @@ def plot_epochs_results(epoch_dict, hyper_params_title):
     plt.title(f"{loss=} | {hyper_params_title}")
     plt.ylabel("Score")
     plt.xlabel("Epoch")
-    file_name = f"plots/{loss=}_{hyper_params_title}.png"
+    file_name = f"plots/{loss=}_{model_save_path}.png"
 
     plt.savefig(file_name)
     plt.clf()
