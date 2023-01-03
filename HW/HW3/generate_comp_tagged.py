@@ -20,6 +20,7 @@ def main():
     lstm_num_layers = 1
     lstm_dropout = 0
     activation = nn.Tanh()
+    optimizer = "ADAM"
 
     torch.manual_seed(42)
     load_dataset_from_pkl = False
@@ -54,17 +55,19 @@ def main():
 
     print("----------------------------------------------------------")
 
-    hyper_params_title = f"word_embedding_name={word_embedding_name}"
+    hyper_params_title = f"{word_embedding_name}"
     hyper_params_title += f" | pos={pos_embedding_name}"
     hyper_params_title += f" | hidden={lstm_hidden_dim}"
     hyper_params_title += f" \nnum_layers={lstm_num_layers}"
     hyper_params_title += f" | dropout={lstm_dropout}"
+    hyper_params_title += f" | opt={optimizer}"
     model_name = "mini_train3 | "
     model_name += f"word_embedding_name={word_embedding_name}"
     model_name += f" | pos={pos_embedding_name}"
     model_name += f" | hidden={lstm_hidden_dim}"
     model_name += f" | num_layers={lstm_num_layers}"
     model_name += f" | dropout={lstm_dropout}"
+    model_name += f" | opt={optimizer}"
     print(hyper_params_title)
     model_save_path = f"{model_name}.pt"
 
