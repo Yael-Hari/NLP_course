@@ -157,7 +157,7 @@ def plot_epochs_results(epoch_dict, hyper_params_title):
         UAS_vals = epoch_dict[dataset_type]["UAS_list"]
         loss_vals = epoch_dict[dataset_type]["loss_list"]
         if dataset_type == "validate":
-            val_UAS = round(UAS_vals[-1], 3)
+            val_UAS = round(float(UAS_vals[-1]), 3)
 
         plt.plot(
             epochs_nums_list,
