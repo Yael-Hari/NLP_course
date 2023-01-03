@@ -159,9 +159,10 @@ def main():
     pos_embedding_dim = 25
 
     lstm_hidden_dim_list = [250, 300]
-    lstm_num_layers_list = [1, 2, 3]
+    lstm_num_layers_list = [1, 2, 3, 4, 5]
     lstm_dropout_list = [0, 0.25, 0.1, 0.3]
 
+    optimizer = "ADAM"
     activation = nn.Tanh()
     num_epochs = 10
     torch.manual_seed(42)
@@ -200,18 +201,20 @@ def main():
                         )
 
                         hyper_params_title = (
-                            f"word_embedding_name={word_embedding_name}"
+                            f"{word_embedding_name}"
                         )
                         hyper_params_title += f" | pos={pos_embedding_name}"
                         hyper_params_title += f" | hidden={lstm_hidden_dim}"
                         hyper_params_title += f" \nnum_layers={lstm_num_layers}"
                         hyper_params_title += f" | dropout={lstm_dropout}"
+                        hyper_params_title += f" | opt={optimizer}"
                         model_name = "mini_train3 | "
                         model_name += f"word_embedding_name={word_embedding_name}"
                         model_name += f" | pos={pos_embedding_name}"
                         model_name += f" | hidden={lstm_hidden_dim}"
                         model_name += f" | num_layers={lstm_num_layers}"
                         model_name += f" | dropout={lstm_dropout}"
+                        model_name += f" | opt={optimizer}"
                         print(hyper_params_title)
                         model_save_path = f"{model_name}.pt"
 
@@ -225,9 +228,14 @@ def main():
                             activation=activation,
                             tagged=True,
                         )
-                        optimizer = torch.optim.SGD(
-                            dependency_model.parameters(), lr=0.1
-                        )
+                        if optimizer == "ADAM":
+                            optimizer = torch.optim.Adam(
+                                params=dependency_model.parameters()
+                            )
+                        elif optimizer == "SGD":
+                            optimizer = torch.optim.SGD(
+                                dependency_model.parameters(), lr=0.1
+                            )
                         train_and_plot(
                             dependency_model=dependency_model,
                             model_save_path=model_save_path,
