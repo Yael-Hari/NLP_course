@@ -57,13 +57,6 @@ class DependencyParser(nn.Module):
             dropout=lstm_dropout,
             bidirectional=True,
         )
-        # self.lstm2 = nn.LSTM(
-        #     input_size=self.hidden_dim * 2,
-        #     hidden_size=self.hidden_dim,
-        #     num_layers=1,
-        #     dropout=lstm_dropout,
-        #     bidirectional=True,
-        # )
         self.fc1 = nn.Linear(self.lstm_hidden_dim * 4, self.fc_hidden_dim)
         self.activation = activation
         self.fc2 = nn.Linear(self.fc_hidden_dim, 1)
