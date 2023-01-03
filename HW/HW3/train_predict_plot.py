@@ -85,7 +85,7 @@ def train_and_plot(
 
                 if dataset_type == "train":
                     # backprop
-                    loss.backward()
+                    loss.backward(retain_graph=True)
                     optimizer.step()
                     optimizer.zero_grad()
 
