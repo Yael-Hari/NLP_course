@@ -17,8 +17,8 @@ def main():
     pos_embedding_dim = 25
     # lstm params
     lstm_hidden_dim = 250
-    lstm_num_layers = 2
-    lstm_dropout = 0.25
+    lstm_num_layers = 1
+    lstm_dropout = 0.1
     activation = nn.Tanh()
 
     torch.manual_seed(42)
@@ -26,57 +26,75 @@ def main():
 
     # get embeddings
     if load_dataset_from_pkl:
-        train_loader, val_loader, comp_loader = torch.load(
+        _, val_dataset, comp_dataset = torch.load(
             f"{word_embedding_name}_{pos_embedding_name}.pkl"
         )
     else:
         Dataset = SentencesEmbeddingDataset(
-            embedding_model_path=word_embedding_name,
+            word_embedding_name=word_embedding_name,
             list_embedding_paths=list_embedding_paths,
             word_embedding_dim_list=word_embedding_dim_list,
             word_embedding_dim=word_embedding_dim,
             pos_embedding_name=pos_embedding_name,
             pos_embedding_dim=pos_embedding_dim,
         )
-        _, _, comp_dateset = Dataset.get_datasets()
+        _, test_dataset, comp_dateset = Dataset.get_datasets()
+
+    # paths
+    # test
+    tagged = True
+    file_path_no_tag = "test.labeled"
+    predictions_path = "test_316375872_206014482.labeled"
+    dataset_to_tag = test_dataset
+    # comp
+    # tagged = False
+    # file_path_no_tag = "comp.unlabeled"
+    # predictions_path = "comp_316375872_206014482.labeled"
+    # dataset_to_tag = comp_dataset
 
     print("----------------------------------------------------------")
 
-    hyper_params_title = f"{word_embedding_name=} | {pos_embedding_name=}"
-    hyper_params_title += f" | hidden={lstm_hidden_dim} \nnum_layers={lstm_num_layers}"
+    hyper_params_title = f"word_embedding_name={word_embedding_name}"
+    hyper_params_title += f" | pos={pos_embedding_name}"
+    hyper_params_title += f" | hidden={lstm_hidden_dim}"
+    hyper_params_title += f" \nnum_layers={lstm_num_layers}"
     hyper_params_title += f" | dropout={lstm_dropout}"
+    model_name = f"word_embedding_name={word_embedding_name}"
+    model_name += f" | pos={model_name}"
+    model_name += f" | hidden={lstm_hidden_dim}"
+    model_name += f" | num_layers={lstm_num_layers}"
+    model_name += f" | dropout={lstm_dropout}"
     print(hyper_params_title)
-    model_save_path = f"{hyper_params_title}.pt"
+    model_save_path = f"{model_name}.pt"
 
     dependency_model = DependencyParser(
-        embedding_dim=word_embedding_dim + pos_embedding_dim,
+        embedding_dim=word_embedding_dim + Dataset.pos_embedding_dim,
         lstm_hidden_dim=lstm_hidden_dim,
         lstm_num_layers=lstm_num_layers,
+        fc_hidden_dim=int(lstm_hidden_dim / 2),
         lstm_dropout=lstm_dropout,
         activation=activation,
-        tagged=False,
+        tagged=tagged,
     )
 
     dependency_model.load_state_dict(torch.load(model_save_path))
 
     # predict
-    pred_deps = predict(dependency_model=dependency_model, dataset_to_tag=comp_dateset)
-
+    pred_deps = predict(
+        dependency_model=dependency_model, dataset_to_tag=dataset_to_tag, tagged=tagged
+    )
     # save tagged file
-    file_path_no_tag = "comp.unlabeled"
-    predictions_path = "comp_316375872_206014482.labeled"
-    write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag)
-
-    # for DEBUG
-    # calc_UAC(predictions_path, tagged_real="test.labeled")
+    write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag, tagged=tagged)
 
 
-def write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag):
+def write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag, tagged):
     print(f"tagging this file: {file_path_no_tag}")
     # empty lines
     empty_lines = ["", "\t"]
     heads = pred_deps[:, 1]
     head_curr_idx = 0
+    num_corrct = 0
+    num_total = 0
 
     with open(file_path_no_tag, "r", encoding="utf8") as untagged_file:
         untagged_lines = untagged_file.read()
@@ -84,6 +102,13 @@ def write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag):
             for untagged_line in untagged_lines.split("\n"):
                 if untagged_line not in empty_lines:
                     values = untagged_line.split("\t")
+                    if tagged:
+                        t = values[6]
+                        p = str(int(heads[head_curr_idx]))
+                        num_total += 1
+                        if t == p:
+                            num_corrct += 1
+                    # write pred
                     values[6] = str(int(heads[head_curr_idx]))
                     new_line = "\t".join(values)
                     new_line += "\n"
@@ -91,4 +116,9 @@ def write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag):
                 else:
                     new_line = "\n"
                 preds_file.write(new_line)
+    print("UAC:", num_corrct / num_total)
     print(f"saved preds to file: {predictions_path}")
+
+
+if __name__ == "__main__":
+    main()
