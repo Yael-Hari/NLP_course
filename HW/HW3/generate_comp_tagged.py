@@ -82,7 +82,10 @@ def main():
 
     # predict
     pred_deps = predict(
-        dependency_model=dependency_model, dataset_to_tag=dataset_to_tag, tagged=tagged
+        dependency_model=dependency_model,
+        dataset_to_tag=dataset_to_tag,
+        tagged=tagged,
+        model_save_path=model_save_path,
     )
     # save tagged file
     write_to_tagged_file(pred_deps, predictions_path, file_path_no_tag, tagged=tagged)
