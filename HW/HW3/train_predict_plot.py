@@ -1,7 +1,8 @@
+import time
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from tqdm import tqdm
 
 from chu_liu_edmonds import decode_mst
 
@@ -35,6 +36,7 @@ def train_and_plot(
         epoch_dict[dataset_type]["all_epochs_UAS_list"] = []
 
     for epoch_num in range(num_epochs):
+        start = time.time()
         datasets = {"train": train_dataset}
         if val_dataset:
             datasets["validate"] = val_dataset
@@ -45,7 +47,7 @@ def train_and_plot(
             epoch_dict[dataset_type]["epoch_num_total_deps_list"] = []
             epoch_dict[dataset_type]["epoch_loss_list"] = []
 
-        for dataset_type, (X, y) in tqdm(datasets.items()):
+        for dataset_type, (X, y) in datasets.items():
             for sentence, true_deps in zip(X, y):
                 # if training on gpu
                 sentence, true_deps = (
@@ -86,6 +88,7 @@ def train_and_plot(
                 epoch_num,
                 dataset_type,
             )
+            print("epoch_time:", time.time() - start)
     torch.save(dependency_model.state_dict(), model_save_path)
     print(f"saved model to file {model_save_path}")
     plot_epochs_results(epoch_dict=epoch_dict, hyper_params_title=hyper_params_title)
