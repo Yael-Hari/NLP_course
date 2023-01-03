@@ -161,9 +161,8 @@ def plot_epochs_results(epoch_dict, hyper_params_title):
     loss_colors = {"train": "purple", "validate": "chocolate"}
     for dataset_type in dataset_types:
         UAS_vals = epoch_dict[dataset_type]["all_epochs_UAS_list"]
-        loss_vals = epoch_dict[dataset_type]["all_epochs_loss_list"]
         if dataset_type == "validate":
-            val_UAS = round(float(UAS_vals[-1]), 3)
+            UAS = round(float(UAS_vals[-1]), 3)
 
         plt.plot(
             epochs_nums_list,
@@ -171,17 +170,32 @@ def plot_epochs_results(epoch_dict, hyper_params_title):
             label=f"{dataset_type}_UAS",
             color=UAS_colors[dataset_type],
         )
+    plt.legend()
+    plt.title(f"{UAS=} | {hyper_params_title}")
+    plt.ylabel("Score")
+    plt.xlabel("Epoch")
+    file_name = f"plots/{UAS=}_{hyper_params_title}.png"
+
+    plt.savefig(file_name)
+    plt.clf()
+    plt.cla()
+
+    for dataset_type in dataset_types:
+        loss_vals = epoch_dict[dataset_type]["all_epochs_loss_list"]
+        if dataset_type == "validate":
+            loss = round(float(loss_vals[-1]), 3)
+
         plt.plot(
             epochs_nums_list,
             loss_vals,
-            label=f"{dataset_type}_avg_loss",
+            label=f"{dataset_type}_loss",
             color=loss_colors[dataset_type],
         )
     plt.legend()
-    plt.title(f"{val_UAS=} | {hyper_params_title}")
+    plt.title(f"{loss=} | {hyper_params_title}")
     plt.ylabel("Score")
     plt.xlabel("Epoch")
-    file_name = f"plots/{val_UAS=}_{hyper_params_title}.png"
+    file_name = f"plots/{loss=}_{hyper_params_title}.png"
 
     plt.savefig(file_name)
     plt.clf()
