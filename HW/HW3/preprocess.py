@@ -75,7 +75,7 @@ class SentencesEmbeddingDataset:
             pos_values.append("unknown")
             for pos in pos_values:
                 pos_embeddings[pos] = torch.rand(
-                    self.pos_embedding_dim, requires_grad=True
+                    self.pos_embedding_dim, requires_grad=False
                 )
         elif self.pos_embedding_name == "onehot":
             pos_values.append("unknown")
@@ -254,7 +254,7 @@ class SentencesEmbeddingDataset:
         if self.list_embedding_paths is None:
             if word not in self.embedding_model.key_to_index:
                 if self.learn_unknown_word:
-                    word_vec = torch.rand(self.word_embedding_dim, requires_grad=True)
+                    word_vec = torch.rand(self.word_embedding_dim, requires_grad=False)
                 else:
                     word_vec = torch.zeros(self.word_embedding_dim)
             else:
@@ -268,7 +268,7 @@ class SentencesEmbeddingDataset:
                 if word not in self.embedding_model[i].key_to_index:
                     if self.learn_unknown_word:
                         word_vec.append(
-                            torch.rand(self.list_vec_dims[i], requires_grad=True)
+                            torch.rand(self.list_vec_dims[i], requires_grad=False)
                         )
                     else:
                         word_vec.append(torch.zeros(self.list_vec_dims[i]))
