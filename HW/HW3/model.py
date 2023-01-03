@@ -90,11 +90,9 @@ class DependencyParser(nn.Module):
         else:
             loss = None
 
+        # add root column on index 0 with scores -inf
         col_to_add = torch.ones((sentence_len + 1, 1)) * float("-inf")
         scores_matrix = torch.concat([col_to_add, scores_matrix], 1)
-        scores_matrix = torch.concat(
-            [scores_matrix[-1].unsqueeze(0), scores_matrix[:-1]]
-        )
         return loss, scores_matrix
 
     def prepare_lstm_output(self, input):
@@ -139,6 +137,9 @@ class DependencyParser(nn.Module):
                 else:
                     output_mat[i, j] = vec_to_reshape[running_index]
                     running_index += 1
+
+        # move root row to be the first row in mat
+        output_mat = torch.concat([output_mat[-1].unsqueeze(0), output_mat[:-1]])
         return output_mat
 
 

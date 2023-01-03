@@ -33,13 +33,12 @@ def train_and_plot(
         epoch_dict[dataset_type]["num_correct_def_list"] = []
         epoch_dict[dataset_type]["num_total_deps_list"] = []
         epoch_dict[dataset_type]["batch_loss_list"] = []
+    # prepare for evaluate
+    for dataset_type in dataset_types:
+        epoch_dict[dataset_type]["loss_list"] = []
+        epoch_dict[dataset_type]["UAS_list"] = []
 
     for epoch_num in range(num_epochs):
-        # prepare for evaluate
-        for dataset_type in dataset_types:
-            epoch_dict[dataset_type]["loss_list"] = []
-            epoch_dict[dataset_type]["UAS_list"] = []
-
         datasets = {"train": train_dataset}
         if val_dataset:
             datasets["validate"] = val_dataset
@@ -57,14 +56,18 @@ def train_and_plot(
                 pred_deps = decode_mst(
                     energy=scores_matrix.clone().detach().cpu(),
                     length=scores_matrix.size(0),
-                    has_labels=False
+                    has_labels=False,
                 )
-                pred_deps_in_format = torch.Tensor([[mod, head] for mod, head in enumerate(pred_deps[0])][1:])
+                pred_deps_in_format = torch.Tensor(
+                    [[mod, head] for mod, head in enumerate(pred_deps[0])][1:]
+                )
                 correct_deps = calc_correct_deps(pred_deps_in_format, true_deps)
                 # update epoch dict
                 epoch_dict[dataset_type]["num_correct_def_list"].append(correct_deps)
                 epoch_dict[dataset_type]["num_total_deps_list"].append(len(true_deps))
-                epoch_dict[dataset_type]["batch_loss_list"].append(loss.detach().cpu())
+                epoch_dict[dataset_type]["batch_loss_list"].append(
+                    loss.clone().detach().cpu()
+                )
 
                 if dataset_type == "train":
                     # backprop
@@ -136,6 +139,7 @@ def print_epoch_details(
     print(
         "Epoch: {}/{} |".format(epoch_num + 1, total_epochs_num),
         "{} UAS: {:.3f} |".format(dataset_type, UAS),
+        "{} loss: {:.3f} |".format(dataset_type, epoch_loss),
     )
 
     epoch_dict[dataset_type]["UAS_list"].append(UAS)
