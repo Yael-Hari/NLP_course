@@ -36,7 +36,6 @@ def train_and_plot(
         epoch_dict[dataset_type]["all_epochs_UAS_list"] = []
 
     for epoch_num in range(num_epochs):
-        start = time.time()
         datasets = {"train": train_dataset}
         if val_dataset:
             datasets["validate"] = val_dataset
@@ -48,6 +47,7 @@ def train_and_plot(
             epoch_dict[dataset_type]["epoch_loss_list"] = []
 
         for dataset_type, (X, y) in datasets.items():
+            start = time.time()
             for sentence, true_deps in zip(X, y):
                 # if training on gpu
                 sentence, true_deps = (
@@ -74,7 +74,7 @@ def train_and_plot(
                     len(true_deps)
                 )
                 epoch_dict[dataset_type]["epoch_loss_list"].append(
-                    loss.clone().detach().cpu()
+                    float(loss.clone().detach().cpu())
                 )
 
                 if dataset_type == "train":
@@ -95,7 +95,7 @@ def train_and_plot(
     print("--- FINISH ---")
 
 
-def predict(dependency_model, dataset_to_tag):
+def predict(dependency_model, dataset_to_tag, tagged):
     # GPU - checking if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
@@ -106,15 +106,57 @@ def predict(dependency_model, dataset_to_tag):
     dependency_model.to(device)
     # run predict
     pred_deps_all = []
-    for sentence in dataset_to_tag:
-        # if training on gpu
-        sentence, true_deps = (sentence.to(device),)
-        # forward
-        _, scores_matrix = dependency_model(sentence, true_deps)
-        # dependencies predictions
-        pred_deps = decode_mst(scores_matrix.clone().detach().cpu())
-        pred_deps_all.append(pred_deps)
-    pred_deps_all = np.concatenate(pred_deps_all)
+    if tagged:
+        (X, y) = dataset_to_tag
+        true_deps_all = []
+        loss_list = []
+        for sentence, true_deps in zip(X, y):
+            # if training on gpu
+            sentence, true_deps = (
+                sentence.to(device),
+                true_deps.to(device),
+            )
+            # forward
+            loss, scores_matrix = dependency_model((sentence, true_deps))
+            # dependencies predictions
+            pred_deps = decode_mst(
+                energy=scores_matrix.clone().detach().cpu(),
+                length=scores_matrix.size(0),
+                has_labels=False,
+            )
+            pred_deps_in_format = torch.Tensor(
+                [[mod, head] for mod, head in enumerate(pred_deps[0])][1:]
+            )
+            pred_deps_all.append(pred_deps_in_format)
+            true_deps_all.append(true_deps)
+            loss_list.append(loss.clone().detach().cpu())
+        pred_deps_all = np.concatenate(pred_deps_all)
+        true_deps_all = np.concatenate(true_deps_all)
+        UAC = calc_correct_deps(pred_deps_all, true_deps_all) / len(true_deps_all)
+        print("loss:", np.round(np.sum(loss_list), 3))
+        print("UAC:", UAC)
+    else:
+        true_deps = None
+        X = dataset_to_tag
+        for sentence in X:
+            # if training on gpu
+            sentence, true_deps = (
+                sentence.to(device),
+                true_deps.to(device),
+            )
+            # forward
+            _, scores_matrix = dependency_model((sentence, true_deps))
+            # dependencies predictions
+            pred_deps = decode_mst(
+                energy=scores_matrix.clone().detach().cpu(),
+                length=scores_matrix.size(0),
+                has_labels=False,
+            )
+            pred_deps_in_format = torch.Tensor(
+                [[mod, head] for mod, head in enumerate(pred_deps[0])][1:]
+            )
+            pred_deps_all.append(pred_deps_in_format)
+        pred_deps_all = np.concatenate(pred_deps_all)
     return pred_deps_all
 
 
@@ -130,7 +172,7 @@ def calc_correct_deps(pred_deps, true_deps):
 
     assuming first column is the same (token idx)
     """
-    return (pred_deps[:, 1] == true_deps[:, 1]).sum()
+    return int((pred_deps[:, 1] == true_deps[:, 1]).sum())
 
 
 def print_epoch_details(
@@ -138,8 +180,8 @@ def print_epoch_details(
     epoch_num,
     dataset_type,
 ):
-    num_correct = epoch_dict[dataset_type]["epoch_num_correct_def_list"][-1]
-    num_total = epoch_dict[dataset_type]["epoch_num_total_deps_list"][-1]
+    num_correct = sum(epoch_dict[dataset_type]["epoch_num_correct_def_list"])
+    num_total = sum(epoch_dict[dataset_type]["epoch_num_total_deps_list"])
     epoch_UAS = num_correct / num_total
     loss_list = epoch_dict[dataset_type]["epoch_loss_list"]
     epoch_loss = np.array(loss_list).sum()
