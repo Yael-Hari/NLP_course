@@ -18,7 +18,7 @@ def main():
     # lstm params
     lstm_hidden_dim = 250
     lstm_num_layers = 1
-    lstm_dropout = 0.25
+    lstm_dropout = 0
     activation = nn.Tanh()
 
     torch.manual_seed(42)
@@ -61,7 +61,7 @@ def main():
     hyper_params_title += f" | dropout={lstm_dropout}"
     model_name = "mini_train3 | "
     model_name += f"word_embedding_name={word_embedding_name}"
-    model_name += f" | pos={model_name}"
+    model_name += f" | pos={pos_embedding_name}"
     model_name += f" | hidden={lstm_hidden_dim}"
     model_name += f" | num_layers={lstm_num_layers}"
     model_name += f" | dropout={lstm_dropout}"
