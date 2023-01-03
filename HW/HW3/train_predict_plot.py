@@ -97,10 +97,10 @@ def train_and_plot(
             print("epoch_time:", time.time() - start)
     torch.save(dependency_model.state_dict(), model_save_path)
     print(f"saved model to file {model_save_path}")
-    with open("pred_deps_all_val.txt", "w") as f:
+    with open(f"pred_deps/pred_deps_all 1_{model_save_path}.txt", "w") as f:
         for i in pred_deps_all_val:
             f.write(str(i) + "\n")
-    with open("true_deps_all_val.txt", "w") as f:
+    with open(f"true_deps/true_deps_all 1_{model_save_path}.txt", "w") as f:
         for i in true_deps_all_val:
             f.write(str(i) + "\n")
 
@@ -112,7 +112,7 @@ def train_and_plot(
     print("--- FINISH ---")
 
 
-def predict(dependency_model, dataset_to_tag, tagged):
+def predict(dependency_model, dataset_to_tag, tagged, model_save_path):
     # GPU - checking if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
@@ -152,10 +152,10 @@ def predict(dependency_model, dataset_to_tag, tagged):
         UAC = calc_correct_deps(pred_deps_all, true_deps_all) / len(true_deps_all)
         print("loss:", np.round(np.sum(loss_list), 3))
         print("UAC:", UAC)
-        with open("pred_deps_all 2.txt", "w") as f:
+        with open(f"pred_deps/pred_deps_all 2_{model_save_path}.txt", "w") as f:
             for i in pred_deps_all:
                 f.write(str(i) + "\n")
-        with open("true_deps_all 2.txt", "w") as f:
+        with open(f"true_deps/true_deps_all 2_{model_save_path}.txt", "w") as f:
             for i in true_deps_all:
                 f.write(str(i) + "\n")
     else:
