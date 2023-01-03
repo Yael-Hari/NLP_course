@@ -102,7 +102,7 @@ class SentencesEmbeddingDataset:
         comp_dataset = X_comp
 
         # create dataloader
-        shuffle_train = True
+        shuffle_train = False
         train_dataloader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=shuffle_train
         )

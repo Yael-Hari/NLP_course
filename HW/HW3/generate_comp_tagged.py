@@ -18,7 +18,7 @@ def main():
     # lstm params
     lstm_hidden_dim = 250
     lstm_num_layers = 1
-    lstm_dropout = 0.1
+    lstm_dropout = 0.25
     activation = nn.Tanh()
 
     torch.manual_seed(42)
@@ -38,14 +38,14 @@ def main():
             pos_embedding_name=pos_embedding_name,
             pos_embedding_dim=pos_embedding_dim,
         )
-        _, test_dataset, comp_dateset = Dataset.get_datasets()
+        train_dataset, test_dataset, comp_dateset = Dataset.get_datasets()
 
     # paths
     # test
     tagged = True
-    file_path_no_tag = "test.labeled"
-    predictions_path = "test_316375872_206014482.labeled"
-    dataset_to_tag = test_dataset
+    file_path_no_tag = "mini_train3.labeled"
+    predictions_path = "mini_train3_316375872_206014482.labeled"
+    dataset_to_tag = train_dataset
     # comp
     # tagged = False
     # file_path_no_tag = "comp.unlabeled"
@@ -59,7 +59,8 @@ def main():
     hyper_params_title += f" | hidden={lstm_hidden_dim}"
     hyper_params_title += f" \nnum_layers={lstm_num_layers}"
     hyper_params_title += f" | dropout={lstm_dropout}"
-    model_name = f"word_embedding_name={word_embedding_name}"
+    model_name = "mini_train3 | "
+    model_name += f"word_embedding_name={word_embedding_name}"
     model_name += f" | pos={model_name}"
     model_name += f" | hidden={lstm_hidden_dim}"
     model_name += f" | num_layers={lstm_num_layers}"
