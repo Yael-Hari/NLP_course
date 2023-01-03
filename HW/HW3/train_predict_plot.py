@@ -137,18 +137,18 @@ def print_epoch_details(
 ):
     num_correct = epoch_dict[dataset_type]["epoch_num_correct_def_list"][-1]
     num_total = epoch_dict[dataset_type]["epoch_num_total_deps_list"][-1]
-    UAS = num_correct / num_total
+    epoch_UAS = num_correct / num_total
     loss_list = epoch_dict[dataset_type]["epoch_loss_list"]
     epoch_loss = np.array(loss_list).sum()
     total_epochs_num = epoch_dict["total_epochs"]
 
     print(
         "Epoch: {}/{} |".format(epoch_num + 1, total_epochs_num),
-        "{} UAS: {:.3f} |".format(dataset_type, UAS),
+        "{} UAS: {:.3f} |".format(dataset_type, epoch_UAS),
         "{} loss: {:.3f} |".format(dataset_type, epoch_loss),
     )
 
-    epoch_dict[dataset_type]["all_epochs_UAS_list"].append(UAS)
+    epoch_dict[dataset_type]["all_epochs_UAS_list"].append(epoch_UAS)
     epoch_dict[dataset_type]["all_epochs_loss_list"].append(epoch_loss)
     return epoch_dict
 
