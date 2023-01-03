@@ -47,7 +47,7 @@ class DependencyParser(nn.Module):
         self.embedding_dim = embedding_dim  # embedding dim: word2vec/glove + POS
         self.lstm_hidden_dim = lstm_hidden_dim
         self.tagged = tagged
-        self.root_vec = torch.rand(embedding_dim, requires_grad=True).unsqueeze(0)
+        self.root_vec = torch.rand(embedding_dim, requires_grad=False).unsqueeze(0)
 
         # ~~~~~~~~~ layers
         self.lstm = nn.LSTM(
@@ -159,7 +159,7 @@ def main():
 
     lstm_hidden_dim_list = [250, 300]
     lstm_num_layers_list = [1, 2, 3]
-    lstm_dropout_list = [0.25, 0.1, 0.3]
+    lstm_dropout_list = [0, 0.25, 0.1, 0.3]
 
     activation = nn.Tanh()
     num_epochs = 10
@@ -207,7 +207,7 @@ def main():
                         hyper_params_title += f" | dropout={lstm_dropout}"
                         model_name = "mini_train3 | "
                         model_name += f"word_embedding_name={word_embedding_name}"
-                        model_name += f" | pos={model_name}"
+                        model_name += f" | pos={pos_embedding_name}"
                         model_name += f" | hidden={lstm_hidden_dim}"
                         model_name += f" | num_layers={lstm_num_layers}"
                         model_name += f" | dropout={lstm_dropout}"
