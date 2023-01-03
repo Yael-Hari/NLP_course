@@ -191,9 +191,9 @@ def main():
                 train_dataset, val_dataset, _ = Dataset.get_datasets()
 
             # run
-            for lstm_hidden_dim in lstm_hidden_dim_list:
-                for lstm_num_layers in lstm_num_layers_list:
-                    for lstm_dropout in lstm_dropout_list:
+            for lstm_dropout in lstm_dropout_list:
+                for lstm_hidden_dim in lstm_hidden_dim_list:
+                    for lstm_num_layers in lstm_num_layers_list:
                         print(
                             "----------------------------------------------------------"
                         )
