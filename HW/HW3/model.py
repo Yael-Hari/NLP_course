@@ -47,7 +47,8 @@ class DependencyParser(nn.Module):
         self.embedding_dim = embedding_dim  # embedding dim: word2vec/glove + POS
         self.lstm_hidden_dim = lstm_hidden_dim
         self.tagged = tagged
-        self.root_vec = torch.rand(embedding_dim, requires_grad=False).unsqueeze(0)
+        # self.root_vec = torch.rand(embedding_dim, requires_grad=False).unsqueeze(0)
+        self.root_vec = torch.zeros(embedding_dim).unsqueeze(0)
 
         # ~~~~~~~~~ layers
         self.lstm = nn.LSTM(
