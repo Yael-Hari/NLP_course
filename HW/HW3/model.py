@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-
+import pickle
 from preprocess import SentencesEmbeddingDataset
-from train_predict_plot import train_and_plot
+from train_predict_plot import train_and_plot, predict
 
 """ 
     ### Code Structure
@@ -69,7 +69,6 @@ class DependencyParser(nn.Module):
         self.log_softmax = nn.LogSoftmax(dim=0)  # dim=0 for cols, dim=1 for rows
         self.loss_func = nn.NLLLoss()
 
-
     def forward(self, sentence):
         sentence_embedded, true_dependencies = sentence
         sentence_len = sentence_embedded.size(0)
@@ -104,7 +103,6 @@ class DependencyParser(nn.Module):
         for each word concatenate hidden vectors
         """
         lstm_output, (hn, cn) = self.lstm(input=input)
-        # TODO: concat outputs from different layers?
         return lstm_output
 
     def concat_pairs(self, mat, sentence_len):
@@ -158,12 +156,17 @@ def main():
     #         500,
     #     )
     # ]
-    pos_embedding_name_list = ["onehot", "learn"]
-    pos_embedding_dim = 25
+    pos_embedding_dim = None
 
-    lstm_hidden_dim_list = [250, 300]
-    lstm_num_layers_list = [1, 2, 3, 4, 5]
-    lstm_dropout_list = [0, 0.25, 0.1, 0.3]
+    # lstm_hidden_dim_list = [250, 300]
+    # pos_embedding_name_list = ["onehot", "learn"]
+    # lstm_num_layers_list = [1, 2, 3, 4, 5]
+    # lstm_dropout_list = [0, 0.25, 0.1, 0.3]
+
+    lstm_hidden_dim_list = [350]
+    pos_embedding_name_list = ["onehot"]
+    lstm_num_layers_list = [3]
+    lstm_dropout_list = [0]
 
     optimizer_name = "ADAM"
     activation = nn.Tanh()
@@ -209,7 +212,7 @@ def main():
                         hyper_params_title += f" \nnum_layers={lstm_num_layers}"
                         hyper_params_title += f" | dropout={lstm_dropout}"
                         hyper_params_title += f" | opt={optimizer_name}"
-                        model_name = "mini_train3 | "
+                        model_name = "train_val | "
                         model_name += f"word_embedding_name={word_embedding_name}"
                         model_name += f" | pos={pos_embedding_name}"
                         model_name += f" | hidden={lstm_hidden_dim}"
@@ -217,7 +220,7 @@ def main():
                         model_name += f" | dropout={lstm_dropout}"
                         model_name += f" | opt={optimizer_name}"
                         print(hyper_params_title)
-                        model_save_path = f"{model_name}.pt"
+                        model_save_path = f"{model_name}.pkl"
 
                         dependency_model = DependencyParser(
                             embedding_dim=word_embedding_dim
@@ -241,6 +244,39 @@ def main():
                             optimizer=optimizer,
                             hyper_params_title=hyper_params_title,
                         )
+
+                        # saved model
+                        dep_model = DependencyParser(
+                            embedding_dim=word_embedding_dim + Dataset.pos_embedding_dim,
+                            lstm_hidden_dim=lstm_hidden_dim,
+                            lstm_num_layers=lstm_num_layers,
+                            fc_hidden_dim=int(lstm_hidden_dim / 2),
+                            lstm_dropout=lstm_dropout,
+                            activation=activation,
+                            tagged=True,
+                        )
+                        dep_model.load_state_dict(torch.load(model_save_path))
+                        # dep_model = torch.load(model_save_path)
+                        dep_model.eval()
+                        predict(
+                            dependency_model=dep_model,
+                            dataset_to_tag=val_dataset,
+                            tagged=True,
+                            model_save_path=model_save_path,
+                        )
+                        # print("train again saved model for 1 epoch:")
+                        # optimizer = torch.optim.Adam(
+                        #     params=dep_model.parameters()
+                        # )
+                        # train_and_plot(
+                        #     dependency_model=dep_model,
+                        #     model_save_path=model_save_path,
+                        #     train_dataset=train_dataset,
+                        #     val_dataset=val_dataset,
+                        #     num_epochs=num_epochs,
+                        #     optimizer=optimizer,
+                        #     hyper_params_title=hyper_params_title,
+                        # )
 
 
 if __name__ == "__main__":

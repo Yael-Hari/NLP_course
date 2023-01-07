@@ -1,5 +1,5 @@
 import time
-
+import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -15,6 +15,7 @@ def train_and_plot(
     num_epochs: int,
     optimizer,
     hyper_params_title: str,
+    plot=True
 ):
     # GPU - checking if GPU is available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -39,8 +40,8 @@ def train_and_plot(
         datasets = {"train": train_dataset}
         if val_dataset:
             datasets["validate"] = val_dataset
-            pred_deps_all_val = []
-            true_deps_all_val = []
+        pred_deps_all_val = []
+        true_deps_all_val = []
 
         # prepare for evaluate
         for dataset_type in dataset_types:
@@ -95,8 +96,22 @@ def train_and_plot(
                 dataset_type,
             )
             print("epoch_time:", time.time() - start)
+
+        # if epoch_num + 1 == 1:
+        #     # torch.save(dependency_model, "epoch1_model.pkl")
+        #     print(epoch_dict["validate"]["all_epochs_UAS_list"])
+        #     print(epoch_dict["validate"]["all_epochs_loss_list"])
+        #     exit()
+
+            # if epoch_num + 1 == 5:
+            #     dependency_model = torch.load("epoch3_model.pkl")
+    print(epoch_dict["validate"]["all_epochs_UAS_list"])
+    # [0.17834836918806385, 0.5454545454545454, 0.6943095072866066, 0.7702984038861902, 0.8400416377515614,
+    #  0.8639833448993754]
+
     torch.save(dependency_model.state_dict(), model_save_path)
-    print(f"saved model to file {model_save_path}")
+    # torch.save(dependency_model, model_save_path)
+
     with open(f"pred_deps/pred_deps_all 1_{model_save_path}.txt", "w") as f:
         for i in pred_deps_all_val:
             f.write(str(i) + "\n")
@@ -104,11 +119,12 @@ def train_and_plot(
         for i in true_deps_all_val:
             f.write(str(i) + "\n")
 
-    plot_epochs_results(
-        epoch_dict=epoch_dict,
-        hyper_params_title=hyper_params_title,
-        model_save_path=model_save_path,
-    )
+    if plot:
+        plot_epochs_results(
+            epoch_dict=epoch_dict,
+            hyper_params_title=hyper_params_title,
+            model_save_path=model_save_path,
+        )
     print("--- FINISH ---")
 
 
@@ -119,7 +135,6 @@ def predict(dependency_model, dataset_to_tag, tagged, model_save_path):
         print("Training on GPU.")
     else:
         print("No GPU available, training on CPU.")
-    device = torch.device("cpu")
     dependency_model.to(device)
     # run predict
     pred_deps_all = []
@@ -152,22 +167,20 @@ def predict(dependency_model, dataset_to_tag, tagged, model_save_path):
         UAC = calc_correct_deps(pred_deps_all, true_deps_all) / len(true_deps_all)
         print("loss:", np.round(np.sum(loss_list), 3))
         print("UAC:", UAC)
-        with open(f"pred_deps/pred_deps_all 2_{model_save_path}.txt", "w") as f:
-            for i in pred_deps_all:
-                f.write(str(i) + "\n")
-        with open(f"true_deps/true_deps_all 2_{model_save_path}.txt", "w") as f:
-            for i in true_deps_all:
-                f.write(str(i) + "\n")
+        # with open(f"pred_deps/pred_deps_all 2_{model_save_path}.txt", "w") as f:
+        #     for i in pred_deps_all:
+        #         f.write(str(i) + "\n")
+        # with open(f"true_deps/true_deps_all 2_{model_save_path}.txt", "w") as f:
+        #     for i in true_deps_all:
+        #         f.write(str(i) + "\n")
     else:
         true_deps = None
         X = dataset_to_tag
-        for sentence in X:
+        for sentence in X[0]:
             # if training on gpu
-            sentence, true_deps = (
-                sentence.to(device),
-                true_deps.to(device),
-            )
+            sentence = sentence.to(device)
             # forward
+            dependency_model.tagged = tagged
             _, scores_matrix = dependency_model((sentence, true_deps))
             # dependencies predictions
             pred_deps = decode_mst(

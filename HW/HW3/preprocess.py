@@ -66,8 +66,9 @@ class SentencesEmbeddingDataset:
         self.comp_path = "comp.unlabeled"
 
         # FOR DEBUG
-        self.train_path = "mini_train3.labeled"
-        self.val_path = "mini_train3.labeled"
+        # self.train_path = "mini_train.labeled"
+        # self.val_path = "mini_train.labeled"
+        # self.comp_path = "mini_comp.unlabeled"
 
     def get_pos_embeddings(self, pos_values):
         if self.pos_embedding_name == "learn":
@@ -255,8 +256,7 @@ class SentencesEmbeddingDataset:
         if self.list_embedding_paths is None:
             if word not in self.embedding_model.key_to_index:
                 if self.learn_unknown_word:
-                    # word_vec = torch.rand(self.word_embedding_dim, requires_grad=False)
-                    word_vec = torch.zeros(self.word_embedding_dim)
+                    word_vec = torch.rand(self.word_embedding_dim, requires_grad=False)
                 else:
                     word_vec = torch.zeros(self.word_embedding_dim)
             else:
@@ -269,12 +269,11 @@ class SentencesEmbeddingDataset:
             for i in range(len(self.embedding_model)):
                 if word not in self.embedding_model[i].key_to_index:
                     if self.learn_unknown_word:
-                        # word_vec.append(
-                        #     torch.rand(self.list_vec_dims[i], requires_grad=False)
-                        # )
-                        word_vec.append(torch.zeros(self.list_vec_dims[i]))
+                        word_vec.append(
+                            torch.rand(self.word_embedding_dim_list[i], requires_grad=False)
+                        )
                     else:
-                        word_vec.append(torch.zeros(self.list_vec_dims[i]))
+                        word_vec.append(torch.zeros(self.word_embedding_dim_list[i]))
                 else:
                     word_vec.append(torch.tensor(self.embedding_model[i][word]))
 
