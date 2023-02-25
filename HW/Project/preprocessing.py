@@ -26,7 +26,7 @@ class DeEnPairsData:
             layer = -1  # Last layer
             de_bibert_emb = self.bibert_model(input_ids, output_hidden_states=True)[2][layer]
             de_bibert_embedding.append(de_bibert_emb)
-        print()
+        # TODO
 
     def get_tokens_labeled_data_loaders(self):
         X_train, y_train = self.get_tokens_labeled(self.train_path)
@@ -70,4 +70,4 @@ class DeEnPairsData:
 
 if __name__ == '__main__':
     dataset = DeEnPairsData()
-    dataset.get_data_loader_labeled(dataset.train_path)
+    dataset.get_embedding_data_loader_labeled(dataset.train_path)

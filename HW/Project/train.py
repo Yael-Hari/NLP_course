@@ -72,6 +72,9 @@ def train_model_wrapper(
         print(f'\tTrain Loss: {train_loss:.4f} | Train BLEU: {train_bleu:7.3f}')
         print(f'\t\tVal. Loss: {val_loss:.4f}  |  Val. BLEU: {val_bleu:7.3f}')
 
+    # ~~~~~~~~~~~~~~~~~~~~ PLOT
+    # TODO
+
 
 def train(model, loader, optimizer, criterion, clip):
     model.train()
