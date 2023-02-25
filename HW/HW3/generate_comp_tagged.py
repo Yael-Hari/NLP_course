@@ -36,7 +36,7 @@ def main_gen_comp():
     # paths
     # test
     tagged = True
-    plot = True
+    plot = False  # TODO change to False
     file_path_no_tag = "mini_train3.labeled"
     predictions_path = "mini_train3_316375872_206014482.labeled"
     dataset_to_tag = gen_val_dataset
