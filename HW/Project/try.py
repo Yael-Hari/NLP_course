@@ -47,7 +47,10 @@ for input_text, output_text in train_data:
     attention_mask = input_encoding['attention_mask'].squeeze()
     decoder_input_ids = output_encoding['input_ids'].squeeze()
     decoder_attention_mask = output_encoding['attention_mask'].squeeze()
-    train_encodings.append({'input_ids': input_ids, 'attention_mask': attention_mask, 'decoder_input_ids': decoder_input_ids, 'decoder_attention_mask': decoder_attention_mask})
+    train_encodings.append({'input_ids': input_ids,
+                            'attention_mask': attention_mask,
+                            'decoder_input_ids': decoder_input_ids,
+                            'decoder_attention_mask': decoder_attention_mask})
 
 eval_data = []
 for german, english in zip(file_de_val, file_en_val):
@@ -65,7 +68,8 @@ for input_text, output_text in eval_data:
     attention_mask = input_encoding['attention_mask'].squeeze()
     decoder_input_ids = output_encoding['input_ids'].squeeze()
     decoder_attention_mask = output_encoding['attention_mask'].squeeze()
-    eval_encodings.append({'input_ids': input_ids, 'attention_mask': attention_mask, 'decoder_input_ids': decoder_input_ids, 'decoder_attention_mask': decoder_attention_mask})
+    eval_encodings.append({'input_ids': input_ids,
+                           'attention_mask': attention_mask, 'decoder_input_ids': decoder_input_ids, 'decoder_attention_mask': decoder_attention_mask})
 
 
 # Define the training arguments
@@ -84,7 +88,7 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=Dataset.from_dict(train_encodings),
+    train_dataset=train_encodings,
 )
 
 trainer.train()
