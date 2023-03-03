@@ -10,8 +10,8 @@ from transformers import AutoTokenizer, TrainingArguments, Trainer, DataCollator
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from project_evaluate import read_file, compute_metrics
 
-file_en_tr, file_de_tr = read_file('data/train.labeled')    # TODO change to train without mini!
-file_en_val, file_de_val = read_file('data/val.labeled')
+file_en_tr, file_de_tr = read_file('data/mini_train.labeled')    # TODO change to train without mini!
+file_en_val, file_de_val = read_file('data/mini_train.labeled')
 output_dir = 'results'
 
 model_name = "t5-base"
@@ -163,34 +163,4 @@ for epoch in range(epochs_n):
 
 path = os.path.join(output_dir, "model_files")
 model.save_pretrained(path)
-tokenizer.save_pretrained(path)
 
-
-
-
-
-
-
-# args = TrainingArguments(
-#     evaluation_strategy="epoch",
-#     output_dir=output_dir,
-#     learning_rate=2e-5,
-#     per_device_train_batch_size=10,
-#     per_device_eval_batch_size=4,
-#     num_train_epochs=3,
-#     weight_decay=0.01,
-#     load_best_model_at_end=False,
-#     metric_for_best_model=metric_name,
-#     logging_dir='logs',
-# )
-#
-# trainer = Trainer(
-#     model,
-#     args,
-#     train_dataset=train_dataset,
-#     eval_dataset=eval_dataset,
-#     data_collator=data_collator,
-#     compute_metrics=compute_metrics_aux,
-# )
-#
-# trainer.train()
