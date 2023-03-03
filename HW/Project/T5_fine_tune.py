@@ -42,8 +42,8 @@ class T5FineTune:
         # TODO remove!!!!!!!!
         file_en_tr = file_en_tr[:1000]
         file_de_tr = file_de_tr[:1000]
-        file_en_val = file_en_val[:25]
-        file_de_val = file_de_val[:25]
+        file_en_val = file_en_val[:1000]
+        file_de_val = file_de_val[:1]
 
         train_dataset =     self.get_dataset(input_sequences=file_de_tr, target_sequences=file_en_tr)
         val_dataset =       self.get_dataset(input_sequences=file_de_val, target_sequences=file_en_val)
@@ -102,43 +102,43 @@ class T5FineTune:
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
-    # def compute_metrics(self, eval_preds):
-    #     preds, labels = eval_preds
-    #
-        # if isinstance(preds, tuple):
-        #     preds = preds[0]
-    #     decoded_preds = self.tokenizer.batch_decode(preds, skip_special_tokens=True)
-    #
-    #     # Replace -100 in the labels as we can't decode them.
-    #     labels = np.where(labels != -100, labels, self.tokenizer.pad_token_id)
-    #     decoded_labels = self.tokenizer.batch_decode(labels, skip_special_tokens=True)
-    #
-    #     # Some simple post-processing
-    #     decoded_preds, decoded_labels = self.postprocess_text(decoded_preds, decoded_labels)
-    #
-    #     result = self.metric.compute(predictions=decoded_preds, references=decoded_labels)
-    #     result = {"bleu": result["score"]}
-    #
-    #     prediction_lens = [np.count_nonzero(pred != self.tokenizer.pad_token_id) for pred in preds]
-    #     result["gen_len"] = np.mean(prediction_lens)
-    #     result = {k: round(v, 4) for k, v in result.items()}
-    #     return result
+    def compute_metrics_aux(self, eval_preds):
+        preds, labels = eval_preds
 
-    def compute_metrics_aux(self, eval_pred):
-        predictions, labels = eval_pred
-        if isinstance(predictions, tuple):
-            predictions = predictions[0]
-
-        decoded_preds = self.tokenizer.batch_decode(predictions, skip_special_tokens=True)
+        if isinstance(preds, tuple):
+            preds = preds[0]
+        decoded_preds = self.tokenizer.batch_decode(preds, skip_special_tokens=True)
 
         # Replace -100 in the labels as we can't decode them.
         labels = np.where(labels != -100, labels, self.tokenizer.pad_token_id)
         decoded_labels = self.tokenizer.batch_decode(labels, skip_special_tokens=True)
 
+        # Some simple post-processing
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
-        res = compute_metrics(decoded_preds, decoded_labels)
-        return res
+        result = self.metric.compute(predictions=decoded_preds, references=decoded_labels)
+        result = {"bleu": result["score"]}
+
+        prediction_lens = [np.count_nonzero(pred != self.tokenizer.pad_token_id) for pred in preds]
+        result["gen_len"] = np.mean(prediction_lens)
+        result = {k: round(v, 4) for k, v in result.items()}
+        return result
+
+    # def compute_metrics_aux(self, eval_pred):
+    #     predictions, labels = eval_pred
+    #     if isinstance(predictions, tuple):
+    #         predictions = predictions[0]
+    #
+    #     decoded_preds = self.tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    #
+    #     # Replace -100 in the labels as we can't decode them.
+    #     labels = np.where(labels != -100, labels, self.tokenizer.pad_token_id)
+    #     decoded_labels = self.tokenizer.batch_decode(labels, skip_special_tokens=True)
+    #
+    #     # decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
+    #
+    #     res = compute_metrics(decoded_preds, decoded_labels)
+    #     return res
 
 
 if __name__ == '__main__':
