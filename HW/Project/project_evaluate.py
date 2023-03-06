@@ -49,3 +49,17 @@ def calculate_score(file_path1, file_path2):
             raise ValueError('Different Sentences')
     score = compute_metrics(file1_en, file2_en)
     print(score)
+
+
+if __name__ == '__main__':
+    pred_en = [r"20 percent below the value of 1990 within 12 years would lower global temperatures " \
+        r"by just a centimeter (a tenth of a degree Celsius). Further cuts, such as the EU’s " \
+        r"proposed – 20 percent below 1990 within 12 years – would have reduced global temperatures by only a centimeter " \
+        r"(a quarter of a degree Celsius) by 2100. That would have cost us only a dollar worth of value. "]
+    true_en = [r"And deeper emissions cuts like those proposed by the European Union – 20% below " \
+        r"1990 levels within 12 years – would reduce global temperatures by only one-sixtieth of one " \
+        r"degree Celsius (one-thirtieth of one degree Fahrenheit) by 2100, at a cost of $10 trillion. "\
+        r"For every dollar spent, we would do just four cents worth of good."]
+
+    score = compute_metrics(pred_en, true_en)
+    print(score)
