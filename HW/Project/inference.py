@@ -23,7 +23,7 @@ def print_time(start):
 t5 = T5FineTune()
 
 # load model
-model = AutoModelForSeq2SeqLM.from_pretrained("t5-base_finetuned_de_to_en/checkpoint-50000")
+model = AutoModelForSeq2SeqLM.from_pretrained("t5-base_finetuned_de_to_en/checkpoint-50000_finetuned_de_to_en/checkpoint-50000")
 
 # load data
 file_en_val, file_de_val = read_file(t5.eval_path)
@@ -36,17 +36,24 @@ for true_english_input, german_input in zip(file_en_val, file_de_val):
     input_ids = t5.tokenizer.encode(german_input, return_tensors='pt', max_length=t5.max_input_length, truncation=True)
     output = model.generate(
         input_ids,
-        max_length=t5.max_target_length,
-        num_beams=16,
-        min_length=50,
+        max_length=(int(len(german_input.split()) * 2)),
+        num_beams=32,
+        # top_p=0.3,
+        min_length=(int(len(german_input.split()) * 2 / 3)),
     )
     english_output = t5.tokenizer.decode(output[0], skip_special_tokens=True)
+    
     curr_score = compute_metrics([english_output], [true_english_input])
     running_sum += curr_score
     running_count += 1
     avg_BLEU = running_sum / running_count
     m, s = print_time(start)
-    print(f"{running_count} | curr_score:{round(curr_score, 2)} | avg_BLEU: {round(avg_BLEU,3)} | time: {m}:{s}")
+    len_true = len(true_english_input.split())
+    len_pred = len(english_output.split())
+    msg = f"{running_count} | time: {m}:{s} | curr_score: {round(curr_score, 2)} | avg_BLEU: {round(avg_BLEU,3)} |"
+    msg += f" l_true: {len_true} | l_pred: {len_pred} | l_diff: {len_true-len_pred}"
+    print(msg)
+    
     german_preds_pairs.append((german_input, english_output))
 
     # write to file
